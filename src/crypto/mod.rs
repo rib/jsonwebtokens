@@ -4,7 +4,6 @@ use std::str::FromStr;
 use ring::signature;
 use serde::{Deserialize, Serialize};
 use simple_asn1::BigUint;
-use serde_json::map::Map;
 
 use crate::error::{Error, ErrorDetails};
 use crate::serialization::b64_decode;

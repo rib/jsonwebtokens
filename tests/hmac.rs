@@ -1,6 +1,5 @@
 use tokio_test::*;
 use tokio;
-use serde::{Deserialize, Serialize};
 use serde_json::json;
 use serde_json::value::Value;
 
@@ -10,13 +9,6 @@ use jwt::crypto::{Algorithm, AlgorithmID};
 
 mod common;
 use common::get_time;
-
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct Claims {
-    sub: String,
-    company: String,
-    exp: i64,
-}
 
 #[tokio::test]
 async fn sign_hs256() {
