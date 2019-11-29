@@ -83,7 +83,7 @@ pub enum AlgorithmID {
     PS512,
 
     #[doc(hidden)]
-    __nonexhaustive
+    __Nonexhaustive
 }
 
 impl Default for AlgorithmID {
@@ -361,7 +361,7 @@ impl Algorithm
             | AlgorithmID::PS512 => {
                 rsa::verify(self.id, &self.secret_or_key, message.as_ref(), signature.as_ref())
             }
-            __Nonexhaustive => unreachable!("unhandled algorithm"),
+            AlgorithmID::__Nonexhaustive => unreachable!("unhandled algorithm"),
         }
     }
 
@@ -385,7 +385,7 @@ impl Algorithm
             | AlgorithmID::PS512 => {
                 rsa::sign(self.id, &self.secret_or_key, message)
             }
-            __Nonexhaustive => unreachable!("unhandled algorithm"),
+            AlgorithmID::__Nonexhaustive => unreachable!("unhandled algorithm"),
         }
     }
 }

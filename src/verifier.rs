@@ -109,7 +109,7 @@ impl Verifier {
                                                                                        claim_key, claim_value))));
                         }
                     }
-                    __Nonexhaustive => unreachable!("Unhandled claim validator kind")
+                    VerifierKind::__Nonexhaustive => unreachable!("Unhandled claim validator kind")
                 }
             }
         }
