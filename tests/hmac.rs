@@ -42,11 +42,11 @@ async fn hmac_256_bad_secret() {
 #[should_panic(expected = "AlgorithmMismatch")]
 async fn missing_alg() {
     let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
+
     let header = json!({ });
     let claims = json!({ "aud": "test" });
     let token_str = jwt::encode(None, &header, &claims, &alg).await.unwrap();
 
-    let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
     let validator = Verifier::create().build().unwrap();
     let _claims: Value = validator.verify(&token_str, &alg).await.unwrap();
 }
