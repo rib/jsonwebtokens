@@ -74,43 +74,45 @@ impl Verifier {
 
     /// Used to verify the header and claims
     fn verify_part(&self, jwt_part: &Map<String, Value>, validators: &HashMap<String, VerifierKind>) -> Result<(), Error> {
-        for claim_key in jwt_part.keys() {
-            if let Some(value) = validators.get(claim_key) {
-                let claim_value = match jwt_part.get(claim_key) {
-                    Some(serde_json::value::Value::String(claim_string)) => claim_string,
-                    _ => return Err(Error::MalformedToken(ErrorDetails::new(format!("{}: string not found", claim_key))))
-                };
 
-                match value {
-                    VerifierKind::Constant(constant) => {
-                        if claim_value != constant {
-                            return Err(Error::MalformedToken(ErrorDetails::new(format!("{}: {} != {}", claim_key, claim_value, constant))));
-                        }
-                    },
-                    VerifierKind::Pattern(pattern) => {
-                        if !pattern.is_match(claim_value) {
-                            return Err(Error::MalformedToken(ErrorDetails::new(format!("{}: {} doesn't match regex {}", claim_key, claim_value, pattern))));
-                        }
-                    },
-                    VerifierKind::Set(constant_set) => {
-                        if !constant_set.contains(claim_value) {
-                            return Err(Error::MalformedToken(ErrorDetails::new(format!("{}: {} not in set", claim_key, claim_value))));
-                        }
-                    },
-                    VerifierKind::PatternSet(pattern_set) => {
-                        let mut found_match = false;
-                        for p in pattern_set {
-                            if p.is_match(claim_value) {
-                                found_match = true;
-                                break;
+        for (claim_key, claim_verifier) in validators.iter() {
+            match jwt_part.get(claim_key) {
+                Some(Value::String(claim_string)) => {
+                    match claim_verifier {
+                        VerifierKind::Constant(constant) => {
+                            if claim_string != constant {
+                                return Err(Error::MalformedToken(ErrorDetails::new(format!("{}: {} != {}", claim_key, claim_string, constant))));
+                            }
+                        },
+                        VerifierKind::Pattern(pattern) => {
+                            if !pattern.is_match(claim_string) {
+                                return Err(Error::MalformedToken(ErrorDetails::new(format!("{}: {} doesn't match regex {}", claim_key, claim_string, pattern))));
+                            }
+                        },
+                        VerifierKind::Set(constant_set) => {
+                            if !constant_set.contains(claim_string) {
+                                return Err(Error::MalformedToken(ErrorDetails::new(format!("{}: {} not in set", claim_key, claim_string))));
+                            }
+                        },
+                        VerifierKind::PatternSet(pattern_set) => {
+                            let mut found_match = false;
+                            for p in pattern_set {
+                                if p.is_match(claim_string) {
+                                    found_match = true;
+                                    break;
+                                }
+                            }
+                            if !found_match {
+                                return Err(Error::MalformedToken(ErrorDetails::new(format!("{}: {} doesn't match regex set",
+                                                                                        claim_key, claim_string))));
                             }
                         }
-                        if !found_match {
-                            return Err(Error::MalformedToken(ErrorDetails::new(format!("{}: {} doesn't match regex set",
-                                                                                       claim_key, claim_value))));
-                        }
+                        VerifierKind::__Nonexhaustive => unreachable!("Unhandled claim validator kind")
                     }
-                    VerifierKind::__Nonexhaustive => unreachable!("Unhandled claim validator kind")
+                }
+                _ => {
+                    // If we have a verifier for particular claim then that claim is required
+                    return Err(Error::MalformedToken(ErrorDetails::new(format!("{}: missing, or not a string", claim_key))));
                 }
             }
         }
@@ -149,6 +151,7 @@ impl Verifier {
         }
 
         let claims = parse_jwt_part(claims)?;
+
         if ! self.ignore_iat {
             match claims.get("iat") {
                 Some(serde_json::value::Value::Number(number)) => {
@@ -295,8 +298,11 @@ impl VerifierBuilder {
         self.claim_validators.insert(claim.into(), VerifierKind::Constant(value.into()));
         self
     }
-    pub fn claim_equals_one_of(&mut self, claim: impl Into<String>, values: HashSet<String>) -> &mut Self {
-        self.claim_validators.insert(claim.into(), VerifierKind::Set(values));
+
+    pub fn claim_equals_one_of(&mut self, claim: impl Into<String>, values: &[&str]) -> &mut Self
+    {
+        let hash_set: HashSet<String> = values.into_iter().cloned().map(|s| s.to_owned()).collect();
+        self.claim_validators.insert(claim.into(), VerifierKind::Set(hash_set));
         self
     }
 
@@ -304,8 +310,17 @@ impl VerifierBuilder {
         self.claim_validators.insert(claim.into(), VerifierKind::Pattern(Pattern(value.into())));
         self
     }
-    pub fn claim_matches_one_of(&mut self, claim: impl Into<String>, values: HashSet<Pattern>) -> &mut Self {
-        self.claim_validators.insert(claim.into(), VerifierKind::PatternSet(values));
+
+    // Maybe this could be more ergonomic if it took &[&str] strings but then we'd have to
+    // defer compiling the regular expressions until .build() which would be a bit of a pain
+    pub fn claim_matches_one_of(&mut self, claim: impl Into<String>, values: &[Regex]) -> &mut Self
+    {
+        let hash_set: HashSet<Pattern> = values
+            .into_iter()
+            .cloned()
+            .map(|r| Pattern(r))
+            .collect();
+        self.claim_validators.insert(claim.into(), VerifierKind::PatternSet(hash_set));
         self
     }
 
