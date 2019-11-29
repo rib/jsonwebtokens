@@ -306,8 +306,8 @@ impl Algorithm
         ensure_rsa_id(id)?;
 
         let pem_key = PemEncodedKey::new(key)?;
-        let key_pair = signature::RsaKeyPair::from_der(pem_key.as_rsa_key()?)
-            .map_err(|e| Error::InvalidInput(ErrorDetails::map("Failed to create RSA key pair for signing", e)))?;
+        let key_pair = signature::RsaKeyPair::from_der(pem_key.as_rsa_private_key()?)
+            .map_err(|e| Error::InvalidInput(ErrorDetails::map("Failed to create RSA key for signing", e)))?;
 
         Ok(Algorithm {
             id: id,
@@ -319,7 +319,7 @@ impl Algorithm
         ensure_rsa_id(id)?;
 
         let pem_key = PemEncodedKey::new(key)?;
-        let rsa_pub_key = pem_key.as_rsa_key()?;
+        let rsa_pub_key = pem_key.as_rsa_public_key()?;
 
         Ok(Algorithm {
             id: id,
