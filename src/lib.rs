@@ -1,7 +1,7 @@
 use serde_json::map::Map;
 use serde_json::value::Value;
 
-mod error;
+pub mod error;
 use error::{Error, ErrorDetails};
 
 mod verifier;

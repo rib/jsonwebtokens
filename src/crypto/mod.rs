@@ -346,6 +346,13 @@ impl Algorithm
         signature: impl AsRef<str>)
     -> Result<(), Error> {
         match self.id {
+            AlgorithmID::NONE => {
+                if signature.as_ref() == "" {
+                    Ok(())
+                } else {
+                    Err(Error::InvalidSignature())
+                }
+            }
             AlgorithmID::HS256 | AlgorithmID::HS384 | AlgorithmID::HS512 => {
                 hmac::verify(self.id, &self.secret_or_key, message.as_ref(), signature.as_ref())
             }
@@ -370,9 +377,12 @@ impl Algorithm
         message: &str)
     -> Result<String, Error> {
         match self.id {
+            AlgorithmID::NONE => {
+                Ok("".to_owned())
+            }
             AlgorithmID::HS256 | AlgorithmID::HS384 | AlgorithmID::HS512 => {
                 hmac::sign(self.id, &self.secret_or_key, message)
-            },
+            }
             AlgorithmID::ES256 | AlgorithmID::ES384 => {
                 ecdsa::sign(self.id, &self.secret_or_key, message)
             }
