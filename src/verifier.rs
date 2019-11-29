@@ -58,6 +58,7 @@ pub struct Verifier {
     leeway: u32,
     ignore_exp: bool,
     ignore_nbf: bool,
+    ignore_iat: bool,
 
     claim_validators: HashMap<String, VerifierKind>,
 
@@ -148,28 +149,69 @@ impl Verifier {
         }
 
         let claims = parse_jwt_part(claims)?;
+        if ! self.ignore_iat {
+            match claims.get("iat") {
+                Some(serde_json::value::Value::Number(number)) => {
+                    if let Some(iat) = number.as_u64() {
+                        if iat > time_now - (self.leeway as u64) {
+                            return Err(Error::MalformedToken(ErrorDetails::new("Issued with a future 'iat' time")));
+                        }
+                    } else {
+                        return Err(Error::MalformedToken(ErrorDetails::new("Failed to parse 'iat' as an integer")));
+                    }
+                }
+                Some(_) => {
+                    return Err(Error::MalformedToken(ErrorDetails::new("Given 'iat' not a number")));
+                }
+                None => {}
+            }
+        }
 
         if ! self.ignore_nbf {
-            if let Some(serde_json::value::Value::Number(number)) = claims.get("nbf") {
-                if let Some(nbf) = number.as_u64() {
-                    if nbf >= time_now + (self.leeway as u64) {
-                        return Err(Error::MalformedToken(ErrorDetails::new("Time is before 'nbf'")));
+            match claims.get("nbf") {
+                Some(serde_json::value::Value::Number(number)) => {
+                    if let Some(nbf) = number.as_u64() {
+                        if nbf >= time_now + (self.leeway as u64) {
+                            return Err(Error::MalformedToken(ErrorDetails::new("Time is before 'nbf'")));
+                        }
+                    } else {
+                        return Err(Error::MalformedToken(ErrorDetails::new("Failed to parse 'nbf' as an integer")));
                     }
-                } else {
-                    return Err(Error::MalformedToken(ErrorDetails::new("Failed to parse 'nbf' as number")));
                 }
+                Some(_) => {
+                    return Err(Error::MalformedToken(ErrorDetails::new("Given 'nbf' not a number")));
+                }
+                None => {}
             }
         }
 
         if ! self.ignore_exp {
-            if let Some(serde_json::value::Value::Number(number)) = claims.get("exp") {
-                if let Some(exp) = number.as_u64() {
-                    if exp < time_now - (self.leeway as u64) {
-                        return Err(Error::TokenExpiredAt(exp));
+            match claims.get("exp") {
+                Some(serde_json::value::Value::Number(number)) => {
+                    if let Some(exp) = number.as_u64() {
+                        if exp < time_now - (self.leeway as u64) {
+                            return Err(Error::TokenExpiredAt(exp));
+                        }
+                    } else {
+                        return Err(Error::MalformedToken(ErrorDetails::new("Failed to parse 'exp' as an integer")));
                     }
-                } else {
-                    return Err(Error::MalformedToken(ErrorDetails::new("Failed to parse 'exp' as number")));
                 }
+                Some(_) => {
+                    return Err(Error::MalformedToken(ErrorDetails::new("Given 'exp' not a number")));
+                }
+                None => {}
+            }
+        }
+
+        // At least verify the type for these standard claims
+        // (Values can separately be validated via .claim_validators)
+        for &string_claim in &[ "iss", "sub", "aud", "" ] {
+            match claims.get(string_claim) {
+                Some(serde_json::value::Value::String(_)) => {}
+                Some(_) => {
+                    return Err(Error::MalformedToken(ErrorDetails::new(format!("Given '{}' not a string", string_claim))));
+                }
+                None => {}
             }
         }
 
@@ -208,6 +250,7 @@ pub struct VerifierBuilder {
     leeway: u32,
     ignore_exp: bool,
     ignore_nbf: bool,
+    ignore_iat: bool,
 
     claim_validators: HashMap<String, VerifierKind>,
 
@@ -222,19 +265,30 @@ impl VerifierBuilder {
             leeway: 0,
             ignore_exp: false,
             ignore_nbf: false,
+            ignore_iat: false,
             claim_validators: HashMap::new(),
             _extensible: ()
         }
     }
 
     /// Convenience for claim_equals("iss", "value")
-    pub fn with_issuer(&mut self, issuer: impl Into<String>) -> &mut Self {
+    pub fn issuer(&mut self, issuer: impl Into<String>) -> &mut Self {
         self.claim_equals("iss", issuer)
     }
 
     /// Convenience for claim_equals("aud", "value")
-    pub fn with_audience(&mut self, issuer: impl Into<String>) -> &mut Self {
+    pub fn audience(&mut self, issuer: impl Into<String>) -> &mut Self {
         self.claim_equals("aud", issuer)
+    }
+
+    /// Convenience for claim_equals("sub", "value")
+    pub fn subject(&mut self, sub: impl Into<String>) -> &mut Self {
+        self.claim_equals("sub", sub)
+    }
+
+    /// Convenience for claim_equals("nonce", "value")
+    pub fn nonce(&mut self, nonce: impl Into<String>) -> &mut Self {
+        self.claim_equals("nonce", nonce)
     }
 
     pub fn claim_equals(&mut self, claim: impl Into<String>, value: impl Into<String>) -> &mut Self {
@@ -270,11 +324,17 @@ impl VerifierBuilder {
         self
     }
 
+    pub fn ignore_iat(&mut self) -> &mut Self {
+        self.ignore_iat = true;
+        self
+    }
+
     pub fn build(&self) -> Result<Verifier, Error> {
         Ok(Verifier {
             leeway: self.leeway,
             ignore_exp: self.ignore_exp,
             ignore_nbf: self.ignore_nbf,
+            ignore_iat: self.ignore_iat,
             claim_validators: self.claim_validators.clone(),
             _extensible: ()
         })
