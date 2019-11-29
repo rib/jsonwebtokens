@@ -14,6 +14,7 @@ pub(crate) mod hmac;
 pub(crate) mod ecdsa;
 pub(crate) mod rsa;
 
+#[derive(Debug)]
 pub enum SecretOrKey {
     // Unsecured
     None,
@@ -226,6 +227,7 @@ pub trait TokenSignatureVerifier
 }
 */
 
+#[derive(Debug)]
 pub struct Algorithm
 {
     id: AlgorithmID,
