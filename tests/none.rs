@@ -85,8 +85,8 @@ async fn round_trip_claims() {
 async fn no_trailing_dot() {
     let alg = Algorithm::new_unsecured().unwrap();
 
-    let token_ok  = "eyJhbGciOiJub25lIn0.eyJjb21wYW55IjoiQUNNRSIsImV4cCI6MTU3NTA2MzE4OSwic3ViIjoiYkBiLmNvbSJ9.";
-    let token_bad = "eyJhbGciOiJub25lIn0.eyJjb21wYW55IjoiQUNNRSIsImV4cCI6MTU3NTA2MzE4OSwic3ViIjoiYkBiLmNvbSJ9";
+    let token_ok   = "eyJhbGciOiJub25lIn0.eyJjb21wYW55IjoiQUNNRSIsInN1YiI6ImJAYi5jb20ifQ.";
+    let token_bad  = "eyJhbGciOiJub25lIn0.eyJjb21wYW55IjoiQUNNRSIsInN1YiI6ImJAYi5jb20ifQ";
 
     let verifier = Verifier::create().build().unwrap();
     let result: Result<Value, jwt::error::Error> = verifier.verify(token_ok, &alg).await;
@@ -100,8 +100,8 @@ async fn no_trailing_dot() {
 async fn token_with_non_empty_signature() {
     let alg = Algorithm::new_unsecured().unwrap();
 
-    let token_ok  = "eyJhbGciOiJub25lIn0.eyJjb21wYW55IjoiQUNNRSIsImV4cCI6MTU3NTA2MzE4OSwic3ViIjoiYkBiLmNvbSJ9.";
-    let token_bad = "eyJhbGciOiJub25lIn0.eyJjb21wYW55IjoiQUNNRSIsImV4cCI6MTU3NTA2MzE4OSwic3ViIjoiYkBiLmNvbSJ9.1234";
+    let token_ok   = "eyJhbGciOiJub25lIn0.eyJjb21wYW55IjoiQUNNRSIsInN1YiI6ImJAYi5jb20ifQ.";
+    let token_bad  = "eyJhbGciOiJub25lIn0.eyJjb21wYW55IjoiQUNNRSIsInN1YiI6ImJAYi5jb20ifQ.1234";
 
     let verifier = Verifier::create().build().unwrap();
     let result: Result<Value, jwt::error::Error> = verifier.verify(token_ok, &alg).await;
