@@ -143,9 +143,9 @@ async fn decode_token_with_bytes_secret() {
 #[tokio::test]
 async fn only_decode_token_header() {
     let token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjb21wYW55IjoiMTIzNDU2Nzg5MCIsInN1YiI6IkpvaG4gRG9lIn0.S";
-    let token_data = decode_header_only(token).unwrap();
-    assert_eq!(token_data.header.get("alg").expect("missing alg"), "HS256");
-    assert_eq!(token_data.header.get("typ").expect("missing typ"), "JWT");
+    let header = decode_header_only(token).unwrap();
+    assert_eq!(header.get("alg").expect("missing alg"), "HS256");
+    assert_eq!(header.get("typ").expect("missing typ"), "JWT");
 }
 
 #[test]

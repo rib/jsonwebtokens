@@ -62,10 +62,9 @@ pub struct TokenData {
     _extensible: (),
 }
 
-pub fn decode_header_only(token: impl AsRef<str>) -> Result<TokenData, Error> {
+pub fn decode_header_only(token: impl AsRef<str>) -> Result<Map<String, Value>, Error> {
     let TokenSlices { header, .. } = get_token_slices(token.as_ref())?;
-    let header = parse_jwt_part(header)?;
-    Ok(TokenData { header: header, claims: None, _extensible: () })
+    parse_jwt_part(header)
 }
 
 pub fn decode_only(token: impl AsRef<str>) -> Result<TokenData, Error> {
