@@ -18,13 +18,6 @@ const RSA_ALGORITHMS: &[AlgorithmID] = &[
     AlgorithmID::PS512,
 ];
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct Claims {
-    sub: String,
-    company: String,
-    exp: u64,
-}
-
 #[tokio::test]
 #[should_panic(expected = "AlgorithmMismatch")]
 async fn decode_token_wrong_algorithm() {
@@ -179,8 +172,8 @@ async fn rsa_modulus_exponent() {
 // https://jwt.io/ is often used for examples so ensure their example works with jsonwebtoken
 #[tokio::test]
 async fn roundtrip_with_jwtio_example_jey() {
-    let privkey_pem = include_bytes!("private_jwtio.pem");
-    let pubkey_pem = include_bytes!("public_jwtio.pem");
+    let privkey_pem = include_bytes!("private_rsa_key_jwtio_pkcs1.pem");
+    let pubkey_pem = include_bytes!("public_rsa_key_jwtio_pkcs1.pem");
 
     let my_claims = json!({
         "sub": "b@b.com",
