@@ -156,7 +156,7 @@ impl Verifier {
             match claims.get("iat") {
                 Some(serde_json::value::Value::Number(number)) => {
                     if let Some(iat) = number.as_u64() {
-                        if iat > time_now - (self.leeway as u64) {
+                        if iat > time_now + (self.leeway as u64) {
                             return Err(Error::MalformedToken(ErrorDetails::new("Issued with a future 'iat' time")));
                         }
                     } else {
@@ -174,7 +174,7 @@ impl Verifier {
             match claims.get("nbf") {
                 Some(serde_json::value::Value::Number(number)) => {
                     if let Some(nbf) = number.as_u64() {
-                        if nbf >= time_now + (self.leeway as u64) {
+                        if nbf > time_now + (self.leeway as u64) {
                             return Err(Error::MalformedToken(ErrorDetails::new("Time is before 'nbf'")));
                         }
                     } else {
@@ -192,7 +192,7 @@ impl Verifier {
             match claims.get("exp") {
                 Some(serde_json::value::Value::Number(number)) => {
                     if let Some(exp) = number.as_u64() {
-                        if exp < time_now - (self.leeway as u64) {
+                        if exp <= time_now - (self.leeway as u64) {
                             return Err(Error::TokenExpiredAt(exp));
                         }
                     } else {
@@ -324,7 +324,7 @@ impl VerifierBuilder {
         self
     }
 
-    pub fn accept_leeway(&mut self, leeway: u32) -> &mut Self {
+    pub fn leeway(&mut self, leeway: u32) -> &mut Self {
         self.leeway = leeway;
         self
     }
