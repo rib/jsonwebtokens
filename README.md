@@ -9,6 +9,19 @@ jwt-rust = "1"
 
 # Usage
 
+The main two types are `Algorithm` which encapsulates a chosen cryptographic
+function for signing or verifying tokens, and a `Verifier` that gives a
+flexible way of describing how incoming tokens should be checked.
+
+Creating an `Algorithm` up front means we don't have to repeatedly parse
+associated secrets or keys.
+
+Signing and verification is done with an `async` API to allow an
+`Algorithm` to potentially encapsulate a key set in the future.
+
+A builder pattern is used for describing verifiers so it should be possible
+to extend its configurability if necessary for different use cases.
+
 ## Signing a token
 
 with a symmetric secret:
@@ -17,6 +30,10 @@ let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
 let header = json!({ "alg": alg.get_jwt_name() });
 let claims = json!({ "foo": "bar" });
 let token = encode(None, &header, &claims, &alg).await.unwrap();
+```
+or if the secret isn't a string pass it base64 encoded:
+```rust
+let alg = Algorithm::new_hmac_b64(AlgorithmID::HS256, secret_data).unwrap();
 ```
 
 with an RSA private key:
