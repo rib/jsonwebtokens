@@ -1,8 +1,9 @@
 use ring::{rand, signature};
 
 use crate::error::{Error, ErrorDetails};
-use crate::crypto::{SecretOrKey, AlgorithmID};
 use crate::serialization::{b64_decode, b64_encode};
+use crate::crypto::SecretOrKey;
+use crate::crypto::algorithm::AlgorithmID;
 
 impl From<AlgorithmID> for &signature::RsaParameters {
     fn from(alg: AlgorithmID) -> Self {

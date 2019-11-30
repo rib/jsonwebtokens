@@ -8,7 +8,7 @@ mod verifier;
 pub use verifier::*;
 
 mod crypto;
-pub use crypto::{Algorithm, AlgorithmID};
+pub use crypto::algorithm::{Algorithm, AlgorithmID};
 
 mod pem;
 mod serialization;
@@ -16,7 +16,7 @@ use serialization::parse_jwt_part;
 
 use serde::ser::Serialize;
 
-pub fn encode<H: Serialize, C: Serialize>(header: &H, claims: &C, algorithm: &crypto::Algorithm) -> Result<String, Error> {
+pub fn encode<H: Serialize, C: Serialize>(header: &H, claims: &C, algorithm: &Algorithm) -> Result<String, Error> {
     let encoded_header = serialization::b64_encode_part(&header)?;
     let encoded_claims = serialization::b64_encode_part(&claims)?;
     let message = [encoded_header.as_ref(), encoded_claims.as_ref()].join(".");

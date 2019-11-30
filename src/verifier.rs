@@ -11,8 +11,8 @@ use serde::de::DeserializeOwned;
 
 use crate::{TokenSlices, get_token_slices, TokenData};
 use crate::error::{Error, ErrorDetails};
-use crate::crypto::{Algorithm, AlgorithmID};
 use crate::serialization::parse_jwt_part;
+use crate::crypto::algorithm::{Algorithm, AlgorithmID};
 
 
 // Regex doesn't implement PartialEq, Eq or Hash so we nee a wrapper...
