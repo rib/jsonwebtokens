@@ -1,65 +1,116 @@
-# Aims
 
-To be a low-level library for encoding, decoding, signing and verifying Json
-Web Tokens
+A Rust implementation of [Json Web Tokens](https://tools.ietf.org/html/rfc7519)
 
+# Installation
 
-# Thoughts based on reviewing other implementations:
-
-Use Auth0's [node-jsonwebtoken](https://github.com/auth0/node-jsonwebtoken)
-and [java-jwt](https://github.com/auth0/java-jwt) implementations as models
-to follow since Auth0 clearly have a lot of experience handling JWTs and so
-their APIs should be battle tested and show the scope of functionality that
-is needed in practice.
-
-Consider that claims are extensible and make it possible for the claims to be
-validated by mulitple interested parties (such as some AWS/Azure specific
-middleware in addition to the user). This implies that we internally have to
-fully deserialize the claims and so we can't internally work with a fixed
-claims struct even if the user would like to get the results deserialized
-into a custom struct. Deserializing into a custom claims struct should be
-optional since it will always imply deserializing more than once which might
-not be desirable.
-
-Don't define a fixed Validation struct for configuring how to validate
-claims. Again since claims can vary between environments we should find a way
-that at least generalizes to validating arbitrary <String, String> key value
-pairs. Notably Auth0's node.js API also allows validating the audience using a
-set of regular expressions.
-
-Having a separate, configurable Validator seems good in itself and then it
-should be easy to construct validators for specific use cases; such as
-validating Cognito ID or access tokens. With rust then it could make sense
-to follow a builder pattern here.
-
-Consider that the user may be interested in inspecting the decoded header and
-claims and if so they shouldn't need to do a second decode after validating.
-
-Decode keys/secrets once, upfront so they don't need to be re-parsed when
-validating tokens. It seems like a good idea to borrow an idea from
-`java-jwt` here and have a separate `Algorithm` be defined that can hold
-any cryptographic state.
-
-Support HMAC secrets that are optionally base64 encoded (seems common enough
-that jwt.io and jsonwebtoken-node support this)
-
-
-# Notable security considerations:
-
-https://paragonie.com/blog/2017/03/jwt-json-web-tokens-is-bad-standard-that-everyone-should-avoid
-
-https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/
-TL;DR:
-Don't blindly trust 'alg' in the header and make sure it matches what you expect,
-otherwise you can be coerced into interpreting an RSA public key as a HMAC secret
-or worse with 'none' might validate without any cryptographic check.
-
-https://blogs.adobe.com/security/2017/03/critical-vulnerability-uncovered-in-json-encryption.html
-TL;DR:
 ```
-"At the end of the day, the issue here is that the specification and
-consequently all the libraries that I checked missed validating that the
-received public key (contained in the JWE Protected Header is on the curve).
-You can see the Vulnerable Libraries section below to check how the various
-libraries fixed the issue."
+jwt-rust = "1"
 ```
+
+# Usage
+
+## Signing a token
+
+with a symmetric secret:
+```rust
+let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
+let header = json!({ "alg": alg.get_jwt_name() });
+let claims = json!({ "foo": "bar" });
+let token = encode(None, &header, &claims, &alg).await.unwrap();
+```
+
+with an RSA private key:
+```rust
+let alg = Algorithm::new_rsa_pem_signer(AlgorithmID::RS256, pem_data).unwrap();
+let header = json!({ "alg": alg.get_jwt_name() });
+let claims = json!({ "foo": "bar" });
+let token = encode(None, &header, &claims, &alg).await.unwrap();
+```
+
+## Verifying tokens
+
+with a symmetric secret:
+```rust
+let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
+let verifier = Verifier::create()
+    .issuer("http://some-auth-service.com")
+    .audience("application_id")
+    .build().unwrap();
+let claims: Value = verifier.verify(&token_str, &alg).await.unwrap();
+```
+
+with an RSA private key:
+```rust
+let alg = Algorithm::new_rsa_pem_verifier(AlgorithmID::RS256, pem_data).unwrap();
+let verifier = Verifier::create()
+    .issuer("http://some-auth-service.com")
+    .audience("application_id")
+    .build().unwrap();
+let claims: Value = verifier.verify(&token_str, &alg).await.unwrap();
+```
+
+## Verifying standard claims
+```rust
+let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
+let verifier = Verifier::create()
+    .issuer("http://some-auth-service.com")
+    .audience("application_id")
+    .subject("subject")
+    .nonce("9837459873945093845")
+    .leeway(5) // give this much leeway (in seconds) when validating exp, nbf and iat claims
+    .build().unwrap();
+let claims: Value = verifier.verify(&token_str, &alg).await.unwrap();
+```
+
+## Verifying custom claims
+```rust
+let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
+let verifier = Verifier::create()
+    .claim_equals("my_claim0", "value")
+    .claim_matches("my_claim1", "value[0-9]")
+    .claim_equals_one_of("my_claim2", &["value0", "value1"])
+    .claim_matches_one_of("my_claim3", &[regex0, regex1])
+    .build().unwrap();
+let claims: Value = verifier.verify(&token_str, &alg).await.unwrap();
+```
+
+## Verifying timestamps (or not)
+```rust
+let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
+let verifier = Verifier::create()
+    .leeway(5)    // give this much leeway when validating exp, nbf and iat claims
+    .ignore_exp() // ignore expiry
+    .ignore_nbf() // ignore 'not before time'
+    .ignore_iat() // ignore issue time
+    .build().unwrap();
+let claims: Value = verifier.verify(&token_str, &alg).await.unwrap();
+```
+
+## Just parse the header
+```rust
+let header = decode_header_only(token);
+let kid = match header.get("kid") {
+    Some(Value::String(s)) => s,
+    _ => return Err(())
+};
+```
+
+
+# Algorithms Supported
+
+Array of supported algorithms. The following algorithms are currently supported.
+
+alg Parameter Value | Digital Signature or MAC Algorithm
+----------------|----------------------------
+HS256 | HMAC using SHA-256 hash algorithm
+HS384 | HMAC using SHA-384 hash algorithm
+HS512 | HMAC using SHA-512 hash algorithm
+RS256 | RSASSA-PKCS1-v1_5 using SHA-256 hash algorithm
+RS384 | RSASSA-PKCS1-v1_5 using SHA-384 hash algorithm
+RS512 | RSASSA-PKCS1-v1_5 using SHA-512 hash algorithm
+PS256 | RSASSA-PSS using SHA-256 hash algorithm
+PS384 | RSASSA-PSS using SHA-384 hash algorithm
+PS512 | RSASSA-PSS using SHA-512 hash algorithm
+ES256 | ECDSA using P-256 curve and SHA-256 hash algorithm (only PKCS#8 format PEM)
+ES384 | ECDSA using P-384 curve and SHA-384 hash algorithm (only PKCS#8 format PEM)
+none | No digital signature or MAC value included
