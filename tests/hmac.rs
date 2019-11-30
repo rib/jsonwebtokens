@@ -4,8 +4,7 @@ use serde_json::json;
 use serde_json::value::Value;
 
 use jwt_rust as jwt;
-use jwt::{Verifier, decode_header_only, decode_only};
-use jwt::crypto::{Algorithm, AlgorithmID};
+use jwt::{Algorithm, AlgorithmID, Verifier, decode_header_only, decode_only};
 
 mod common;
 use common::get_time;

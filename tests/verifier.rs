@@ -4,13 +4,10 @@ use serde_json::value::Value;
 use regex::Regex;
 
 use jwt_rust as jwt;
-use jwt::Verifier;
-use jwt::crypto::{Algorithm, AlgorithmID};
+use jwt::{Algorithm, AlgorithmID, Verifier};
 
 mod common;
 use common::get_time;
-
-const REFERENCE_TIME: u64 = 1575057015u64;
 
 #[tokio::test]
 async fn claim_equals() {

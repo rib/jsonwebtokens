@@ -2,9 +2,7 @@ use tokio;
 use serde_json::json;
 
 use jwt_rust as jwt;
-use jwt::Verifier;
-use jwt::crypto::{Algorithm, AlgorithmID};
-use jwt::error::Error;
+use jwt::{Algorithm, AlgorithmID, Verifier, error::Error};
 
 mod common;
 

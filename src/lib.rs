@@ -6,7 +6,9 @@ use error::{Error, ErrorDetails};
 
 mod verifier;
 pub use verifier::*;
-pub mod crypto;
+
+mod crypto;
+pub use crypto::{Algorithm, AlgorithmID};
 
 mod pem;
 mod serialization;
