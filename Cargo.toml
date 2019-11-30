@@ -4,6 +4,8 @@ version = "1.0.0-alpha.1"
 authors = ["Robert Bragg <robert@sixbynine.org>"]
 license = "MIT"
 description = "A Json Web Token implementation for Rust"
+homepage = "https://github.com/rib/jwt-rust"
+repository = "https://github.com/rib/jwt-rust"
 keywords = ["jwt", "web", "api", "token"]
 edition = "2018"
 
