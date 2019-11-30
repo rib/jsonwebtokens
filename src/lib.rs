@@ -16,11 +16,11 @@ use serialization::parse_jwt_part;
 
 use serde::ser::Serialize;
 
-pub async fn encode<H: Serialize, C: Serialize>(key: Option<&str>, header: &H, claims: &C, algorithm: &crypto::Algorithm) -> Result<String, Error> {
+pub fn encode<H: Serialize, C: Serialize>(header: &H, claims: &C, algorithm: &crypto::Algorithm) -> Result<String, Error> {
     let encoded_header = serialization::b64_encode_part(&header)?;
     let encoded_claims = serialization::b64_encode_part(&claims)?;
     let message = [encoded_header.as_ref(), encoded_claims.as_ref()].join(".");
-    let signature = algorithm.sign(key, &message).await?;
+    let signature = algorithm.sign(&message)?;
     Ok([message, signature].join("."))
 }
 

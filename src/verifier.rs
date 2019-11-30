@@ -119,7 +119,7 @@ impl Verifier {
         Ok(())
     }
 
-    pub async fn verify_for_time(
+    pub fn verify_for_time(
         &self,
         token: impl AsRef<str>,
         algorithm: &Algorithm,
@@ -145,7 +145,7 @@ impl Verifier {
                     None => None
                 };
 
-                algorithm.verify(kid, message, signature).await?;
+                algorithm.verify(kid, message, signature)?;
             },
             _ => return Err(Error::AlgorithmMismatch())
         }
@@ -223,7 +223,7 @@ impl Verifier {
         Ok(TokenData { header: header, claims: Some(claims), _extensible: () })
     }
 
-    pub async fn verify<C: DeserializeOwned, T: AsRef<str>>(
+    pub fn verify<C: DeserializeOwned, T: AsRef<str>>(
         &self,
         token: T,
         algorithm: &Algorithm,
@@ -234,7 +234,7 @@ impl Verifier {
             Err(_) => return Err(Error::InvalidInput(ErrorDetails::new("SystemTime before UNIX EPOCH!"))),
         };
 
-        match self.verify_for_time(token.as_ref(), algorithm, timestamp).await {
+        match self.verify_for_time(token.as_ref(), algorithm, timestamp) {
             Ok(data) => {
                 if let Some(claims) = data.claims {
                     let claims = serde_json::value::Value::Object(claims);

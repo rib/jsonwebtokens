@@ -1,4 +1,3 @@
-use tokio;
 use serde_json::json;
 use serde_json::value::Value;
 
@@ -26,16 +25,16 @@ const EC_ALGORITHMS: &[KeyPair] = &[
     },
 ];
 
-#[tokio::test]
+#[test]
 #[should_panic(expected = "InvalidInput")]
-async fn fails_with_non_ecdsa_pkcs8_key_format() {
+fn fails_with_non_ecdsa_pkcs8_key_format() {
     let privkey = include_bytes!("../rsa/private_rsa_key_pkcs1.pem");
     let _alg = Algorithm::new_ecdsa_pem_signer(AlgorithmID::ES256, privkey).unwrap();
 }
 
-#[tokio::test]
+#[test]
 #[should_panic(expected = "InvalidInput")]
-async fn wrong_ecdsa_curve() {
+fn wrong_ecdsa_curve() {
     let privkey_pem = include_bytes!("private_ecdsa_key_jwtio_p256_pkcs8.pem");
 
     let my_claims = json!({
@@ -46,22 +45,22 @@ async fn wrong_ecdsa_curve() {
 
     let alg = Algorithm::new_ecdsa_pem_signer(AlgorithmID::ES384, privkey_pem).unwrap();
 
-    let header = json!({"alg": alg.get_jwt_name(), "kid": "kid", "my_hdr": "my_hdr_val"});
-    let _token = jwt::encode(Some("kid"), &header, &my_claims, &alg).await.unwrap();
+    let header = json!({"alg": alg.get_jwt_name(), "my_hdr": "my_hdr_val"});
+    let _token = jwt::encode(&header, &my_claims, &alg).unwrap();
 }
 
-#[tokio::test]
-async fn round_trip_sign_verification_pem() {
+#[test]
+fn round_trip_sign_verification_pem() {
     for keypair in EC_ALGORITHMS {
         let alg = Algorithm::new_ecdsa_pem_signer(keypair.id, keypair.privkey).unwrap();
-        let signature = alg.sign(None, "hello world").await.unwrap();
+        let signature = alg.sign("hello world").unwrap();
         let alg = Algorithm::new_ecdsa_pem_verifier(keypair.id, keypair.pubkey).unwrap();
-        alg.verify(None, "hello world", signature).await.unwrap();
+        alg.verify(None, "hello world", signature).unwrap();
     }
 }
 
-#[tokio::test]
-async fn round_trip_claims() {
+#[test]
+fn round_trip_claims() {
     let my_claims = json!({
         "sub": "b@b.com",
         "company": "ACME",
@@ -71,12 +70,12 @@ async fn round_trip_claims() {
     for keypair in EC_ALGORITHMS {
         let alg = Algorithm::new_ecdsa_pem_signer(keypair.id, keypair.privkey).unwrap();
 
-        let header = json!({"alg": alg.get_jwt_name(), "kid": "kid", "my_hdr": "my_hdr_val"});
-        let token = jwt::encode(Some("kid"), &header, &my_claims, &alg).await.unwrap();
+        let header = json!({"alg": alg.get_jwt_name(), "my_hdr": "my_hdr_val"});
+        let token = jwt::encode(&header, &my_claims, &alg).unwrap();
 
         let alg = Algorithm::new_ecdsa_pem_verifier(keypair.id, keypair.pubkey).unwrap();
         let verifier = Verifier::create().build().unwrap();
-        let claims: Value = verifier.verify(token, &alg).await.unwrap();
+        let claims: Value = verifier.verify(token, &alg).unwrap();
 
         assert_eq!(my_claims, claims);
     }

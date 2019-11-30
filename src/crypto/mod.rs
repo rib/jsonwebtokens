@@ -216,20 +216,11 @@ fn ensure_rsa_id(id: AlgorithmID) -> Result<(), Error>
     }
 }
 
-// The idea is that by having a trait based around an async API we make it easy to support
-// validating based on a remote (jwks) key set
-// (Not possible yet though because we can't have async functions in traits)
-/*
-pub trait TokenSignatureVerifier
-{
-    async fn verify(header: &Header, message: &str, signature: &str) -> Result<bool, Error>;
-}
-*/
-
 #[derive(Debug)]
 pub struct Algorithm
 {
     id: AlgorithmID,
+    kid: Option<String>,
 
     secret_or_key: SecretOrKey,
 
@@ -239,17 +230,34 @@ pub struct Algorithm
 
 impl Algorithm
 {
+    /// Returns the `AlgorithmID` that was used to construct the `Algorithm`
     pub fn get_id(&self) -> AlgorithmID {
         self.id
     }
 
+    /// Returns the algorithm name as standardized in [RFC 7519](https://tools.ietf.org/html/rfc7519)
     pub fn get_jwt_name(&self) -> &'static str {
         self.id.into()
+    }
+
+    /// Optionally if a `kid` is associated with an algorithm there will be an extra
+    /// verification that a token's kid matches the one associated with the `Algorithm`
+    pub fn set_kid(&mut self, kid: impl Into<String>) {
+        self.kid = Some(kid.into());
+    }
+
+    /// Returns a reference to any associated `kid` set via `set_kid()`
+    pub fn get_kid(&self) -> Option<&str> {
+        match &self.kid {
+            Some(string) => Some(string.as_ref()),
+            None => None
+        }
     }
 
     pub fn new_unsecured() -> Result<Self, Error> {
         Ok(Algorithm {
             id: AlgorithmID::NONE,
+            kid: None,
             secret_or_key: SecretOrKey::None,
             _extensible: ()
         })
@@ -260,6 +268,7 @@ impl Algorithm
 
         Ok(Algorithm {
             id: id,
+            kid: None,
             secret_or_key: SecretOrKey::Secret(secret.into()),
             _extensible: ()
         })
@@ -269,6 +278,7 @@ impl Algorithm
 
         Ok(Algorithm {
             id: id,
+            kid: None,
             secret_or_key: SecretOrKey::Secret(b64_decode(secret.as_ref())?),
             _extensible: ()
         })
@@ -284,6 +294,7 @@ impl Algorithm
 
         Ok(Algorithm {
             id: id,
+            kid: None,
             secret_or_key: SecretOrKey::EcdsaKeyPair(signing_key),
             _extensible: ()
         })
@@ -296,6 +307,7 @@ impl Algorithm
 
         Ok(Algorithm {
             id: id,
+            kid: None,
             secret_or_key: SecretOrKey::EcdsaUnparsedKey(ec_pub_key.to_vec()),
             _extensible: ()
         })
@@ -310,6 +322,7 @@ impl Algorithm
 
         Ok(Algorithm {
             id: id,
+            kid: None,
             secret_or_key: SecretOrKey::RsaKeyPair(key_pair),
             _extensible: ()
         })
@@ -322,6 +335,7 @@ impl Algorithm
 
         Ok(Algorithm {
             id: id,
+            kid: None,
             secret_or_key: SecretOrKey::RsaUnparsedKey(rsa_pub_key.to_vec()),
             _extensible: ()
         })
@@ -334,17 +348,28 @@ impl Algorithm
 
         Ok(Algorithm {
             id: id,
+            kid: None,
             secret_or_key: SecretOrKey::RsaParameters(n, e),
             _extensible: ()
         })
     }
 
-    pub async fn verify(
+    pub fn verify(
         &self,
-        _kid: Option<&str>,
+        kid: Option<&str>,
         message: impl AsRef<str>,
         signature: impl AsRef<str>)
     -> Result<(), Error> {
+
+        // We need an Option(&str) instead of Option(String)
+        let kid_matches = match &self.kid {
+            Some(string) => kid == Some(string.as_ref()),
+            None => kid == None
+        };
+        if !kid_matches {
+            return Err(Error::MalformedToken(ErrorDetails::new(format!("'kid' ({:?}) didn't match ID ({:?}) associated with Algorithm", kid, self.kid))));
+        }
+
         match self.id {
             AlgorithmID::NONE => {
                 if signature.as_ref() == "" {
@@ -371,9 +396,8 @@ impl Algorithm
         }
     }
 
-    pub async fn sign(
+    pub fn sign(
         &self,
-        _kid: Option<&str>,
         message: &str)
     -> Result<String, Error> {
         match self.id {

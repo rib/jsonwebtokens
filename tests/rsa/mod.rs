@@ -1,4 +1,3 @@
-use tokio;
 use serde_json::json;
 use serde_json::value::Value;
 
@@ -16,45 +15,45 @@ const RSA_ALGORITHMS: &[AlgorithmID] = &[
     AlgorithmID::PS512,
 ];
 
-#[tokio::test]
+#[test]
 #[should_panic(expected = "AlgorithmMismatch")]
-async fn decode_token_wrong_algorithm() {
+fn decode_token_wrong_algorithm() {
     let pubkey_pem = include_bytes!("public_rsa_key_pkcs1.pem");
 
     let alg = Algorithm::new_rsa_pem_verifier(AlgorithmID::RS256, pubkey_pem).unwrap();
     let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiQGIuY29tIiwiY29tcGFueSI6IkFDTUUifQ.I1BvFoHe94AFf09O6tDbcSB8-jp8w6xZqmyHIwPeSdY";
     let verifier = Verifier::create().build().unwrap();
-    let _claims: Value = verifier.verify(token, &alg).await.unwrap();
+    let _claims: Value = verifier.verify(token, &alg).unwrap();
 }
 
-#[tokio::test]
-async fn round_trip_sign_verification_pem_pkcs1() {
+#[test]
+fn round_trip_sign_verification_pem_pkcs1() {
     let privkey_pem = include_bytes!("private_rsa_key_pkcs1.pem");
     let pubkey_pem = include_bytes!("public_rsa_key_pkcs1.pem");
 
     for &id in RSA_ALGORITHMS {
         let alg = Algorithm::new_rsa_pem_signer(id, privkey_pem).unwrap();
-        let signature = alg.sign(None, "hello world").await.unwrap();
+        let signature = alg.sign("hello world").unwrap();
         let alg = Algorithm::new_rsa_pem_verifier(id, pubkey_pem).unwrap();
-        alg.verify(None, "hello world", signature).await.unwrap();
+        alg.verify(None, "hello world", signature).unwrap();
     }
 }
 
-#[tokio::test]
-async fn round_trip_sign_verification_pem_pkcs8() {
+#[test]
+fn round_trip_sign_verification_pem_pkcs8() {
     let privkey_pem = include_bytes!("private_rsa_key_pkcs8.pem");
     let pubkey_pem = include_bytes!("public_rsa_key_pkcs8.pem");
 
     for &id in RSA_ALGORITHMS {
         let alg = Algorithm::new_rsa_pem_signer(id, privkey_pem).unwrap();
-        let signature = alg.sign(None, "hello world").await.unwrap();
+        let signature = alg.sign("hello world").unwrap();
         let alg = Algorithm::new_rsa_pem_verifier(id, pubkey_pem).unwrap();
-        alg.verify(None, "hello world", signature).await.unwrap();
+        alg.verify(None, "hello world", signature).unwrap();
     }
 }
 
-#[tokio::test]
-async fn round_trip_claims() {
+#[test]
+fn round_trip_claims() {
     let privkey_pem = include_bytes!("private_rsa_key_pkcs8.pem");
     let pubkey_pem = include_bytes!("public_rsa_key_pkcs8.pem");
 
@@ -67,19 +66,19 @@ async fn round_trip_claims() {
     for &id in RSA_ALGORITHMS {
         let alg = Algorithm::new_rsa_pem_signer(id, privkey_pem).unwrap();
 
-        let header = json!({"alg": alg.get_jwt_name(), "kid": "kid", "my_hdr": "my_hdr_val"});
-        let token = jwt::encode(Some("kid"), &header, &my_claims, &alg).await.unwrap();
+        let header = json!({"alg": alg.get_jwt_name(), "my_hdr": "my_hdr_val"});
+        let token = jwt::encode(&header, &my_claims, &alg).unwrap();
 
         let alg = Algorithm::new_rsa_pem_verifier(id, pubkey_pem).unwrap();
         let verifier = Verifier::create().build().unwrap();
-        let claims: Value = verifier.verify(token, &alg).await.unwrap();
+        let claims: Value = verifier.verify(token, &alg).unwrap();
 
         assert_eq!(my_claims, claims);
     }
 }
 
-#[tokio::test]
-async fn round_trip_claims_and_custom_header() {
+#[test]
+fn round_trip_claims_and_custom_header() {
     let privkey_pem = include_bytes!("private_rsa_key_pkcs1.pem");
     let pubkey_pem = include_bytes!("public_rsa_key_pkcs1.pem");
 
@@ -92,14 +91,15 @@ async fn round_trip_claims_and_custom_header() {
     for &id in RSA_ALGORITHMS {
         let alg = Algorithm::new_rsa_pem_signer(id, privkey_pem).unwrap();
 
-        let header = json!({"alg": alg.get_jwt_name(), "kid": "kid", "my_hdr": "my_hdr_val"});
-        let token = jwt::encode(Some("kid"), &header, &my_claims, &alg).await.unwrap();
+        let header = json!({"alg": alg.get_jwt_name(), "kid": "kid1234", "my_hdr": "my_hdr_val"});
+        let token = jwt::encode(&header, &my_claims, &alg).unwrap();
 
-        let alg = Algorithm::new_rsa_pem_verifier(id, pubkey_pem).unwrap();
+        let mut alg = Algorithm::new_rsa_pem_verifier(id, pubkey_pem).unwrap();
+        alg.set_kid("kid1234");
         let verifier = Verifier::create().build().unwrap();
 
         // We have to use the lower-level for_time API if we want to see the header
-        let token_data = verifier.verify_for_time(token, &alg, get_time()).await.unwrap();
+        let token_data = verifier.verify_for_time(token, &alg, get_time()).unwrap();
 
         // The returned claims are just the Map which is probably more likely to be
         // convenient in practice, but here we have to convert it into a
@@ -107,14 +107,14 @@ async fn round_trip_claims_and_custom_header() {
         let verified_claims = Value::Object(token_data.claims.expect("no claims"));
 
         assert_eq!(my_claims, verified_claims);
-        assert_eq!(token_data.header.get("kid").unwrap(), "kid");
+        assert_eq!(token_data.header.get("kid").unwrap(), "kid1234");
         assert_eq!(token_data.header.get("my_hdr").unwrap(), "my_hdr_val");
     }
 }
 
-#[tokio::test]
+#[test]
 #[should_panic(expected = "InvalidInput")]
-async fn dont_allow_sign_with_verify_algorithm() {
+fn dont_allow_sign_with_verify_algorithm() {
     let my_claims = json!({
         "sub": "b@b.com",
         "company": "ACME",
@@ -124,13 +124,13 @@ async fn dont_allow_sign_with_verify_algorithm() {
 
     let verify_alg = Algorithm::new_rsa_pem_verifier(AlgorithmID::RS256, keypair).unwrap();
 
-    let header = json!({"alg": verify_alg.get_jwt_name(), "kid": "kid"});
-    let _token = jwt::encode(Some("kid"), &header, &my_claims, &verify_alg).await.unwrap();
+    let header = json!({"alg": verify_alg.get_jwt_name()});
+    let _token = jwt::encode(&header, &my_claims, &verify_alg).unwrap();
 }
 
-#[tokio::test]
+#[test]
 #[should_panic(expected = "InvalidInput")]
-async fn dont_allow_verify_with_sign_algorithm() {
+fn dont_allow_verify_with_sign_algorithm() {
     let my_claims = json!({
         "sub": "b@b.com",
         "company": "ACME",
@@ -140,15 +140,15 @@ async fn dont_allow_verify_with_sign_algorithm() {
 
     let sign_alg = Algorithm::new_rsa_pem_signer(AlgorithmID::RS256, keypair).unwrap();
 
-    let header = json!({"alg": sign_alg.get_jwt_name(), "kid": "kid"});
-    let token = jwt::encode(Some("kid"), &header, &my_claims, &sign_alg).await.unwrap();
+    let header = json!({"alg": sign_alg.get_jwt_name()});
+    let token = jwt::encode(&header, &my_claims, &sign_alg).unwrap();
 
     let verifier = Verifier::create().build().unwrap();
-    let _claims: Value = verifier.verify(token, &sign_alg).await.unwrap();
+    let _claims: Value = verifier.verify(token, &sign_alg).unwrap();
 }
 
-#[tokio::test]
-async fn rsa_modulus_exponent() {
+#[test]
+fn rsa_modulus_exponent() {
     let privkey = include_bytes!("private_rsa_key_pkcs1.pem");
     let sign_alg = Algorithm::new_rsa_pem_signer(AlgorithmID::RS256, privkey).unwrap();
     let my_claims = json!({
@@ -160,16 +160,16 @@ async fn rsa_modulus_exponent() {
     let e = "AQAB";
 
     let header = json!({"alg": sign_alg.get_jwt_name() });
-    let token = jwt::encode(None, &header, &my_claims, &sign_alg).await.unwrap();
+    let token = jwt::encode(&header, &my_claims, &sign_alg).unwrap();
 
     let verify_alg = Algorithm::new_rsa_n_e_b64_verifier(AlgorithmID::RS256, n, e).unwrap();
     let verifier = Verifier::create().build().unwrap();
-    let _claims: Value = verifier.verify(token, &verify_alg).await.unwrap();
+    let _claims: Value = verifier.verify(token, &verify_alg).unwrap();
 }
 
 // https://jwt.io/ is often used for examples so ensure their example works with jsonwebtoken
-#[tokio::test]
-async fn roundtrip_with_jwtio_example_jey() {
+#[test]
+fn roundtrip_with_jwtio_example_jey() {
     let privkey_pem = include_bytes!("private_rsa_key_jwtio_pkcs1.pem");
     let pubkey_pem = include_bytes!("public_rsa_key_jwtio_pkcs1.pem");
 
@@ -183,11 +183,11 @@ async fn roundtrip_with_jwtio_example_jey() {
         let alg = Algorithm::new_rsa_pem_signer(id, privkey_pem).unwrap();
 
         let header = json!({"alg": alg.get_jwt_name()});
-        let token = jwt::encode(None, &header, &my_claims, &alg).await.unwrap();
+        let token = jwt::encode(&header, &my_claims, &alg).unwrap();
 
         let alg = Algorithm::new_rsa_pem_verifier(id, pubkey_pem).unwrap();
         let verifier = Verifier::create().build().unwrap();
-        let claims: Value = verifier.verify(token, &alg).await.unwrap();
+        let claims: Value = verifier.verify(token, &alg).unwrap();
 
         assert_eq!(my_claims, claims);
     }

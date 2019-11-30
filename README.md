@@ -5,6 +5,7 @@ A Rust implementation of [Json Web Tokens](https://tools.ietf.org/html/rfc7519)
 
 ```
 jwt-rust = "1"
+serde_json = "1"
 ```
 
 # Usage
@@ -16,9 +17,6 @@ flexible way of describing how incoming tokens should be checked.
 Creating an `Algorithm` up front means we don't have to repeatedly parse
 associated secrets or keys.
 
-Signing and verification is done with an `async` API to allow an
-`Algorithm` to potentially encapsulate a key set in the future.
-
 A builder pattern is used for describing verifiers so it should be possible
 to extend its configurability if necessary for different use cases.
 
@@ -29,7 +27,7 @@ with a symmetric secret:
 let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
 let header = json!({ "alg": alg.get_jwt_name() });
 let claims = json!({ "foo": "bar" });
-let token = encode(None, &header, &claims, &alg).await.unwrap();
+let token = encode(&header, &claims, &alg).unwrap();
 ```
 or if the secret isn't a string pass it base64 encoded:
 ```rust
@@ -41,7 +39,7 @@ with an RSA private key:
 let alg = Algorithm::new_rsa_pem_signer(AlgorithmID::RS256, pem_data).unwrap();
 let header = json!({ "alg": alg.get_jwt_name() });
 let claims = json!({ "foo": "bar" });
-let token = encode(None, &header, &claims, &alg).await.unwrap();
+let token = encode(&header, &claims, &alg).unwrap();
 ```
 
 ## Verifying tokens
@@ -53,7 +51,7 @@ let verifier = Verifier::create()
     .issuer("http://some-auth-service.com")
     .audience("application_id")
     .build().unwrap();
-let claims: Value = verifier.verify(&token_str, &alg).await.unwrap();
+let claims: Value = verifier.verify(&token_str, &alg).unwrap();
 ```
 
 with an RSA private key:
@@ -63,7 +61,7 @@ let verifier = Verifier::create()
     .issuer("http://some-auth-service.com")
     .audience("application_id")
     .build().unwrap();
-let claims: Value = verifier.verify(&token_str, &alg).await.unwrap();
+let claims: Value = verifier.verify(&token_str, &alg).unwrap();
 ```
 
 ## Verifying standard claims
@@ -76,7 +74,7 @@ let verifier = Verifier::create()
     .nonce("9837459873945093845")
     .leeway(5) // give this much leeway (in seconds) when validating exp, nbf and iat claims
     .build().unwrap();
-let claims: Value = verifier.verify(&token_str, &alg).await.unwrap();
+let claims: Value = verifier.verify(&token_str, &alg).unwrap();
 ```
 
 ## Verifying custom claims
@@ -88,7 +86,7 @@ let verifier = Verifier::create()
     .claim_equals_one_of("my_claim2", &["value0", "value1"])
     .claim_matches_one_of("my_claim3", &[regex0, regex1])
     .build().unwrap();
-let claims: Value = verifier.verify(&token_str, &alg).await.unwrap();
+let claims: Value = verifier.verify(&token_str, &alg).unwrap();
 ```
 
 ## Verifying timestamps (or not)
@@ -100,7 +98,7 @@ let verifier = Verifier::create()
     .ignore_nbf() // ignore 'not before time'
     .ignore_iat() // ignore issue time
     .build().unwrap();
-let claims: Value = verifier.verify(&token_str, &alg).await.unwrap();
+let claims: Value = verifier.verify(&token_str, &alg).unwrap();
 ```
 
 ## Just parse the header

@@ -21,5 +21,4 @@ simple_asn1 = "0.4"
 ring = { version = "0.16", features = ["std"] }
 
 [dev-dependencies]
-tokio = { version = "0.2", features = ["test-util", "rt-core", "macros"] }
 tokio-test = "0.2"
