@@ -101,18 +101,50 @@ let verifier = Verifier::create()
 let claims: Value = verifier.verify(&token_str, &alg)?;
 ```
 
-## Just parse the header
-```rust
-let header = raw::decode_header_only(token);
-let kid = match header.get("kid") {
-    Some(Value::String(s)) => s,
-    _ => return Err(())
-};
-```
+# Low-level Usage
+
+In case you have more particular decoding and/or validation requirements than are
+currently handled with the above, high-level APIs, enough of the lower-level
+implementation details are exposed to allow you to manually split, decode and
+verify a JWT token.
+
 
 ## Just split a token into component parts
 ```rust
 let TokenSlices {message, signature, header, claims } = raw::split_token(token)?;
+```
+
+## Just parse the header
+```rust
+use serde_json::value::Value;
+let header: Value = raw::decode_header_only(token);
+```
+
+## Base64 decode header or claims and deserialize JSON
+Equivalent to `raw::decode_header_only()`:
+```rust
+let TokenSlices {header, .. } = raw::split_token(token)?;
+let header = raw::decode_json_token_slice(header)?;
+```
+
+Or, decode and deserialize just the claims:
+```rust
+let TokenSlices {claims, .. } = raw::split_token(token)?;
+let claims = raw::decode_json_token_slice(claims)?;
+```
+
+## Manually split, decode and verify a token
+```rust
+let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret")?;
+let verifier = Verifier::create()
+    // snip
+    .build()?;
+
+let TokenSlices {message, signature, header, claims } = raw::split_token(token)?;
+let header = raw::decode_json_token_slice(header)?;
+raw::verify_signature_only(&header, message, signature, &alg)?;
+let claims = raw::decode_json_token_slice(claims)?;
+verifier.verify_claims_only(&claims, time_now)?;
 ```
 
 # Algorithms Supported
