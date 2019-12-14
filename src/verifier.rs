@@ -9,7 +9,7 @@ use serde_json::map::Map;
 use serde_json::value::Value;
 use serde::de::DeserializeOwned;
 
-use crate::{TokenSlices, get_token_slices, TokenData};
+use crate::{TokenSlices, split_token, TokenData};
 use crate::error::{Error, ErrorDetails};
 use crate::serialization::parse_jwt_part;
 use crate::crypto::algorithm::{Algorithm, AlgorithmID};
@@ -195,7 +195,7 @@ impl Verifier {
         time_now: u64
     ) -> Result<TokenData, Error>
     {
-        let TokenSlices {message, signature, header, claims } = get_token_slices(token.as_ref())?;
+        let TokenSlices {message, signature, header, claims } = split_token(token.as_ref())?;
         let header = parse_jwt_part(header)?;
 
         match header.get("alg") {

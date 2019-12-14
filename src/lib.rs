@@ -36,14 +36,23 @@ macro_rules! expect_two {
     }};
 }
 
-struct TokenSlices<'a> {
+pub struct TokenSlices<'a> {
+    /// The header and claims (including adjoining '.') but not the last '.' or signature
     message: &'a str,
+
+    /// Just the trailing signature, no '.'
     signature: &'a str,
+
+    /// Just the leading header, no '.'
     header: &'a str,
+
+    /// Just the claims in between the header and signature, no '.'s
     claims: &'a str,
 }
 
-pub(crate) fn get_token_slices<'a>(token: &'a str) -> Result<TokenSlices<'a>, Error> {
+/// Splits a token that's in the form `"HEADER.CLAIMS.SIGNATURE"` into useful constituent
+/// parts for further parsing and validation.
+pub fn split_token<'a>(token: &'a str) -> Result<TokenSlices<'a>, Error> {
     let (signature, message) = expect_two!(token.rsplitn(2, '.'));
     let (header, claims) = expect_two!(message.splitn(2, '.'));
 
@@ -65,12 +74,12 @@ pub struct TokenData {
 }
 
 pub fn decode_header_only(token: impl AsRef<str>) -> Result<Map<String, Value>, Error> {
-    let TokenSlices { header, .. } = get_token_slices(token.as_ref())?;
+    let TokenSlices { header, .. } = split_token(token.as_ref())?;
     parse_jwt_part(header)
 }
 
 pub fn decode_only(token: impl AsRef<str>) -> Result<TokenData, Error> {
-    let TokenSlices { header, claims, .. } = get_token_slices(token.as_ref())?;
+    let TokenSlices { header, claims, .. } = split_token(token.as_ref())?;
     let header = parse_jwt_part(header)?;
     let claims = parse_jwt_part(claims)?;
     Ok(TokenData { header: header, claims: Some(claims), _extensible: () })
