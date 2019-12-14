@@ -69,11 +69,7 @@ impl Verifier {
         VerifierBuilder::new()
     }
 
-    fn verify_claims_only(&self,
-        claims: &serde_json::value::Value,
-        validators: &HashMap<String, VerifierKind>,
-        time_now: u64
-    ) -> Result<(), Error> {
+    fn verify_claims_only(&self, claims: &serde_json::value::Value, time_now: u64) -> Result<(), Error> {
 
         let claims = match claims {
             serde_json::value::Value::Object(map) => map,
@@ -146,6 +142,8 @@ impl Verifier {
             }
         }
 
+        let validators = &self.claim_validators;
+
         for (claim_key, claim_verifier) in validators.iter() {
             match claims.get(claim_key) {
                 Some(Value::String(claim_string)) => {
@@ -202,7 +200,7 @@ impl Verifier {
         let header = decode_json_token_slice(header)?;
         verify_signature_only(&header, message, signature, algorithm)?;
         let claims = decode_json_token_slice(claims)?;
-        self.verify_claims_only(&claims, &self.claim_validators, time_now)?;
+        self.verify_claims_only(&claims, time_now)?;
 
         Ok(TokenData { header: header, claims: Some(claims), _extensible: () })
     }
