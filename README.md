@@ -20,6 +20,10 @@ associated secrets or keys.
 A builder pattern is used for describing verifiers so it should be possible
 to extend its configurability if necessary for different use cases.
 
+There is also a low-level [(`::raw`)](#Low-level-Usage) API available in
+case you need more control over splitting, decoding, deserializing and
+verifying tokens.
+
 ## Signing a token
 
 with a symmetric secret:
