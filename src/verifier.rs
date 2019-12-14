@@ -72,11 +72,80 @@ impl Verifier {
         VerifierBuilder::new()
     }
 
-    /// Used to verify the header and claims
-    fn verify_part(&self, jwt_part: &Map<String, Value>, validators: &HashMap<String, VerifierKind>) -> Result<(), Error> {
+    fn verify_claims(&self,
+        claims: &Map<String, Value>,
+        validators: &HashMap<String, VerifierKind>,
+        time_now: u64
+    ) -> Result<(), Error> {
+
+        if ! self.ignore_iat {
+            match claims.get("iat") {
+                Some(serde_json::value::Value::Number(number)) => {
+                    if let Some(iat) = number.as_u64() {
+                        if iat > time_now + (self.leeway as u64) {
+                            return Err(Error::MalformedToken(ErrorDetails::new("Issued with a future 'iat' time")));
+                        }
+                    } else {
+                        return Err(Error::MalformedToken(ErrorDetails::new("Failed to parse 'iat' as an integer")));
+                    }
+                }
+                Some(_) => {
+                    return Err(Error::MalformedToken(ErrorDetails::new("Given 'iat' not a number")));
+                }
+                None => {}
+            }
+        }
+
+        if ! self.ignore_nbf {
+            match claims.get("nbf") {
+                Some(serde_json::value::Value::Number(number)) => {
+                    if let Some(nbf) = number.as_u64() {
+                        if nbf > time_now + (self.leeway as u64) {
+                            return Err(Error::MalformedToken(ErrorDetails::new("Time is before 'nbf'")));
+                        }
+                    } else {
+                        return Err(Error::MalformedToken(ErrorDetails::new("Failed to parse 'nbf' as an integer")));
+                    }
+                }
+                Some(_) => {
+                    return Err(Error::MalformedToken(ErrorDetails::new("Given 'nbf' not a number")));
+                }
+                None => {}
+            }
+        }
+
+        if ! self.ignore_exp {
+            match claims.get("exp") {
+                Some(serde_json::value::Value::Number(number)) => {
+                    if let Some(exp) = number.as_u64() {
+                        if exp <= time_now - (self.leeway as u64) {
+                            return Err(Error::TokenExpiredAt(exp));
+                        }
+                    } else {
+                        return Err(Error::MalformedToken(ErrorDetails::new("Failed to parse 'exp' as an integer")));
+                    }
+                }
+                Some(_) => {
+                    return Err(Error::MalformedToken(ErrorDetails::new("Given 'exp' not a number")));
+                }
+                None => {}
+            }
+        }
+
+        // At least verify the type for these standard claims
+        // (Values can separately be validated via .claim_validators)
+        for &string_claim in &[ "iss", "sub", "aud", "" ] {
+            match claims.get(string_claim) {
+                Some(serde_json::value::Value::String(_)) => {}
+                Some(_) => {
+                    return Err(Error::MalformedToken(ErrorDetails::new(format!("Given '{}' not a string", string_claim))));
+                }
+                None => {}
+            }
+        }
 
         for (claim_key, claim_verifier) in validators.iter() {
-            match jwt_part.get(claim_key) {
+            match claims.get(claim_key) {
                 Some(Value::String(claim_string)) => {
                     match claim_verifier {
                         VerifierKind::Constant(constant) => {
@@ -151,74 +220,7 @@ impl Verifier {
         }
 
         let claims = parse_jwt_part(claims)?;
-
-        if ! self.ignore_iat {
-            match claims.get("iat") {
-                Some(serde_json::value::Value::Number(number)) => {
-                    if let Some(iat) = number.as_u64() {
-                        if iat > time_now + (self.leeway as u64) {
-                            return Err(Error::MalformedToken(ErrorDetails::new("Issued with a future 'iat' time")));
-                        }
-                    } else {
-                        return Err(Error::MalformedToken(ErrorDetails::new("Failed to parse 'iat' as an integer")));
-                    }
-                }
-                Some(_) => {
-                    return Err(Error::MalformedToken(ErrorDetails::new("Given 'iat' not a number")));
-                }
-                None => {}
-            }
-        }
-
-        if ! self.ignore_nbf {
-            match claims.get("nbf") {
-                Some(serde_json::value::Value::Number(number)) => {
-                    if let Some(nbf) = number.as_u64() {
-                        if nbf > time_now + (self.leeway as u64) {
-                            return Err(Error::MalformedToken(ErrorDetails::new("Time is before 'nbf'")));
-                        }
-                    } else {
-                        return Err(Error::MalformedToken(ErrorDetails::new("Failed to parse 'nbf' as an integer")));
-                    }
-                }
-                Some(_) => {
-                    return Err(Error::MalformedToken(ErrorDetails::new("Given 'nbf' not a number")));
-                }
-                None => {}
-            }
-        }
-
-        if ! self.ignore_exp {
-            match claims.get("exp") {
-                Some(serde_json::value::Value::Number(number)) => {
-                    if let Some(exp) = number.as_u64() {
-                        if exp <= time_now - (self.leeway as u64) {
-                            return Err(Error::TokenExpiredAt(exp));
-                        }
-                    } else {
-                        return Err(Error::MalformedToken(ErrorDetails::new("Failed to parse 'exp' as an integer")));
-                    }
-                }
-                Some(_) => {
-                    return Err(Error::MalformedToken(ErrorDetails::new("Given 'exp' not a number")));
-                }
-                None => {}
-            }
-        }
-
-        // At least verify the type for these standard claims
-        // (Values can separately be validated via .claim_validators)
-        for &string_claim in &[ "iss", "sub", "aud", "" ] {
-            match claims.get(string_claim) {
-                Some(serde_json::value::Value::String(_)) => {}
-                Some(_) => {
-                    return Err(Error::MalformedToken(ErrorDetails::new(format!("Given '{}' not a string", string_claim))));
-                }
-                None => {}
-            }
-        }
-
-        self.verify_part(&claims, &self.claim_validators)?;
+        self.verify_claims(&claims, &self.claim_validators, time_now)?;
 
         Ok(TokenData { header: header, claims: Some(claims), _extensible: () })
     }
