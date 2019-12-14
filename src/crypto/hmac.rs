@@ -1,6 +1,6 @@
 use ring::hmac;
 use ring::constant_time::verify_slices_are_equal;
-use crate::serialization::b64_encode;
+use crate::raw::*;
 use crate::error::{Error, ErrorDetails};
 use crate::crypto::SecretOrKey;
 use crate::crypto::algorithm::AlgorithmID;

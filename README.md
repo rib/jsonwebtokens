@@ -103,7 +103,7 @@ let claims: Value = verifier.verify(&token_str, &alg)?;
 
 ## Just parse the header
 ```rust
-let header = decode_header_only(token);
+let header = raw::decode_header_only(token);
 let kid = match header.get("kid") {
     Some(Value::String(s)) => s,
     _ => return Err(())
@@ -112,7 +112,7 @@ let kid = match header.get("kid") {
 
 ## Just split a token into component parts
 ```rust
-let TokenSlices {message, signature, header, claims } = split_token(token)?;
+let TokenSlices {message, signature, header, claims } = raw::split_token(token)?;
 ```
 
 # Algorithms Supported

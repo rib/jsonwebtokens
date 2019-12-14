@@ -12,7 +12,7 @@ fn token_just_expired() {
     let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
     let header = json!({ "alg": "HS256" });
     let claims = json!({ "exp": REFERENCE_TIME });
-    let token_str = jwt::encode(&header, &claims, &alg).unwrap();
+    let token_str = jwt::raw::encode(&header, &claims, &alg).unwrap();
 
     // "requires that the current date/time MUST be before the expiration
     //  date/time listed in the "exp" claim."
@@ -32,7 +32,7 @@ fn token_expired() {
     let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
     let header = json!({ "alg": "HS256" });
     let claims = json!({ "exp": REFERENCE_TIME });
-    let token_str = jwt::encode(&header, &claims, &alg).unwrap();
+    let token_str = jwt::raw::encode(&header, &claims, &alg).unwrap();
 
     let verifier = Verifier::create().build().unwrap();
     let result = verifier.verify_for_time(&token_str, &alg, REFERENCE_TIME + 100);
@@ -49,7 +49,7 @@ fn ignore_token_expired() {
     let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
     let header = json!({ "alg": "HS256" });
     let claims = json!({ "exp": REFERENCE_TIME });
-    let token_str = jwt::encode(&header, &claims, &alg).unwrap();
+    let token_str = jwt::raw::encode(&header, &claims, &alg).unwrap();
 
     let verifier = Verifier::create()
         .ignore_exp()
@@ -62,7 +62,7 @@ fn token_recently_expired_with_leeway() {
     let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
     let header = json!({ "alg": "HS256" });
     let claims = json!({ "exp": REFERENCE_TIME });
-    let token_str = jwt::encode(&header, &claims, &alg).unwrap();
+    let token_str = jwt::raw::encode(&header, &claims, &alg).unwrap();
 
     let verifier = Verifier::create()
         .leeway(5)
@@ -75,7 +75,7 @@ fn token_used_exactly_at_nbf_time() {
     let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
     let header = json!({ "alg": "HS256" });
     let claims = json!({ "nbf": REFERENCE_TIME });
-    let token_str = jwt::encode(&header, &claims, &alg).unwrap();
+    let token_str = jwt::raw::encode(&header, &claims, &alg).unwrap();
 
     // "The "nbf" (not before) claim identifies the time before which the JWT
     //  MUST NOT be accepted for processing.  The processing of the "nbf"
@@ -92,7 +92,7 @@ fn token_used_early() {
     let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
     let header = json!({ "alg": "HS256" });
     let claims = json!({ "nbf": REFERENCE_TIME + 100 });
-    let token_str = jwt::encode(&header, &claims, &alg).unwrap();
+    let token_str = jwt::raw::encode(&header, &claims, &alg).unwrap();
 
     // "The "nbf" (not before) claim identifies the time before which the JWT
     //  MUST NOT be accepted for processing.  The processing of the "nbf"
@@ -108,7 +108,7 @@ fn ignore_token_used_early() {
     let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
     let header = json!({ "alg": "HS256" });
     let claims = json!({ "nbf": REFERENCE_TIME + 100 });
-    let token_str = jwt::encode(&header, &claims, &alg).unwrap();
+    let token_str = jwt::raw::encode(&header, &claims, &alg).unwrap();
 
     let verifier = Verifier::create()
         .ignore_nbf()
@@ -121,7 +121,7 @@ fn token_used_slightly_early_with_leeway() {
     let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
     let header = json!({ "alg": "HS256" });
     let claims = json!({ "nbf": REFERENCE_TIME + 1 });
-    let token_str = jwt::encode(&header, &claims, &alg).unwrap();
+    let token_str = jwt::raw::encode(&header, &claims, &alg).unwrap();
 
     let verifier = Verifier::create()
         .leeway(5)
@@ -135,7 +135,7 @@ fn token_used_before_issue() {
     let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
     let header = json!({ "alg": "HS256" });
     let claims = json!({ "iat": REFERENCE_TIME + 100 });
-    let token_str = jwt::encode(&header, &claims, &alg).unwrap();
+    let token_str = jwt::raw::encode(&header, &claims, &alg).unwrap();
 
     let verifier = Verifier::create()
         .build().unwrap();
@@ -147,7 +147,7 @@ fn token_used_before_just_before_issue_with_leeway() {
     let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
     let header = json!({ "alg": "HS256" });
     let claims = json!({ "iat": REFERENCE_TIME + 1 });
-    let token_str = jwt::encode(&header, &claims, &alg).unwrap();
+    let token_str = jwt::raw::encode(&header, &claims, &alg).unwrap();
 
     let verifier = Verifier::create()
         .leeway(5)

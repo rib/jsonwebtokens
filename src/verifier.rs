@@ -1,5 +1,4 @@
 use std::fmt;
-use std::str::FromStr;
 use std::ops::Deref;
 use std::time::SystemTime;
 use std::hash::{ Hash, Hasher };
@@ -8,10 +7,9 @@ use regex::Regex;
 use serde_json::value::Value;
 use serde::de::DeserializeOwned;
 
-use crate::{TokenSlices, split_token, TokenData};
 use crate::error::{Error, ErrorDetails};
-use crate::serialization::decode_json_token_slice;
-use crate::crypto::algorithm::{Algorithm, AlgorithmID};
+use crate::raw::*;
+use crate::crypto::algorithm::{Algorithm};
 
 
 // Regex doesn't implement PartialEq, Eq or Hash so we nee a wrapper...
@@ -71,7 +69,7 @@ impl Verifier {
         VerifierBuilder::new()
     }
 
-    fn verify_claims(&self,
+    fn verify_claims_only(&self,
         claims: &serde_json::value::Value,
         validators: &HashMap<String, VerifierKind>,
         time_now: u64
@@ -200,31 +198,11 @@ impl Verifier {
     ) -> Result<TokenData, Error>
     {
         let TokenSlices {message, signature, header, claims } = split_token(token.as_ref())?;
+
         let header = decode_json_token_slice(header)?;
-
-        match header.get("alg") {
-            Some(serde_json::value::Value::String(alg)) => {
-                let alg = AlgorithmID::from_str(alg)?;
-
-                if alg != algorithm.get_id() {
-                    return Err(Error::AlgorithmMismatch());
-                }
-
-                // We want the Algorithm verifier to be able to abstract a key set in the future so we
-                // need to pass it any 'kid' if available...
-                let kid = match header.get("kid") {
-                    Some(serde_json::value::Value::String(k)) => Some(k.as_ref()),
-                    Some(_) => return Err(Error::MalformedToken(ErrorDetails::new("Non-string 'kid' found"))),
-                    None => None
-                };
-
-                algorithm.verify(kid, message, signature)?;
-            },
-            _ => return Err(Error::AlgorithmMismatch())
-        }
-
+        verify_signature_only(&header, message, signature, algorithm)?;
         let claims = decode_json_token_slice(claims)?;
-        self.verify_claims(&claims, &self.claim_validators, time_now)?;
+        self.verify_claims_only(&claims, &self.claim_validators, time_now)?;
 
         Ok(TokenData { header: header, claims: Some(claims), _extensible: () })
     }

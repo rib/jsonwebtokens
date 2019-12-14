@@ -2,7 +2,7 @@
 use ring::{rand, signature};
 
 use crate::error::{Error, ErrorDetails};
-use crate::serialization::{b64_decode, b64_encode};
+use crate::raw::*;
 use crate::crypto::SecretOrKey;
 use crate::crypto::algorithm::AlgorithmID;
 

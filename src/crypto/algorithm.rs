@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use simple_asn1::BigUint;
 
 use crate::error::{Error, ErrorDetails};
-use crate::serialization::b64_decode;
+use crate::raw::*;
 use crate::pem::decoder::PemEncodedKey;
 use crate::crypto::*;
 
