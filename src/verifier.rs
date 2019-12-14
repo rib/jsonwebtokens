@@ -69,7 +69,8 @@ impl Verifier {
         VerifierBuilder::new()
     }
 
-    fn verify_claims_only(&self, claims: &serde_json::value::Value, time_now: u64) -> Result<(), Error> {
+    /// Verifies a token's claims but does not look at any header or verify any signature
+    pub fn verify_claims_only(&self, claims: &serde_json::value::Value, time_now: u64) -> Result<(), Error> {
 
         let claims = match claims {
             serde_json::value::Value::Object(map) => map,
