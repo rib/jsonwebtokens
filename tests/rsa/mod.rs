@@ -101,10 +101,7 @@ fn round_trip_claims_and_custom_header() {
         // We have to use the lower-level for_time API if we want to see the header
         let token_data = verifier.verify_for_time(token, &alg, get_time()).unwrap();
 
-        // The returned claims are just the Map which is probably more likely to be
-        // convenient in practice, but here we have to convert it into a
-        // serde_json::value::Value to compare with the original claims
-        let verified_claims = Value::Object(token_data.claims.expect("no claims"));
+        let verified_claims = token_data.claims.expect("no claims");
 
         assert_eq!(my_claims, verified_claims);
         assert_eq!(token_data.header.get("kid").unwrap(), "kid1234");

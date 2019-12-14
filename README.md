@@ -24,81 +24,81 @@ to extend its configurability if necessary for different use cases.
 
 with a symmetric secret:
 ```rust
-let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
+let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret")?;
 let header = json!({ "alg": alg.get_jwt_name() });
 let claims = json!({ "foo": "bar" });
-let token = encode(&header, &claims, &alg).unwrap();
+let token = encode(&header, &claims, &alg)?;
 ```
 or if the secret isn't a string pass it base64 encoded:
 ```rust
-let alg = Algorithm::new_hmac_b64(AlgorithmID::HS256, secret_data).unwrap();
+let alg = Algorithm::new_hmac_b64(AlgorithmID::HS256, secret_data)?;
 ```
 
 with an RSA private key:
 ```rust
-let alg = Algorithm::new_rsa_pem_signer(AlgorithmID::RS256, pem_data).unwrap();
+let alg = Algorithm::new_rsa_pem_signer(AlgorithmID::RS256, pem_data)?;
 let header = json!({ "alg": alg.get_jwt_name() });
 let claims = json!({ "foo": "bar" });
-let token = encode(&header, &claims, &alg).unwrap();
+let token = encode(&header, &claims, &alg)?;
 ```
 
 ## Verifying tokens
 
 with a symmetric secret:
 ```rust
-let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
+let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret")?;
 let verifier = Verifier::create()
     .issuer("http://some-auth-service.com")
     .audience("application_id")
-    .build().unwrap();
-let claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    .build()?;
+let claims: Value = verifier.verify(&token_str, &alg)?;
 ```
 
 with an RSA private key:
 ```rust
-let alg = Algorithm::new_rsa_pem_verifier(AlgorithmID::RS256, pem_data).unwrap();
+let alg = Algorithm::new_rsa_pem_verifier(AlgorithmID::RS256, pem_data)?;
 let verifier = Verifier::create()
     .issuer("http://some-auth-service.com")
     .audience("application_id")
-    .build().unwrap();
-let claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    .build()?;
+let claims: Value = verifier.verify(&token_str, &alg)?;
 ```
 
 ## Verifying standard claims
 ```rust
-let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
+let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret")?;
 let verifier = Verifier::create()
     .issuer("http://some-auth-service.com")
     .audience("application_id")
     .subject("subject")
     .nonce("9837459873945093845")
     .leeway(5) // give this much leeway (in seconds) when validating exp, nbf and iat claims
-    .build().unwrap();
-let claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    .build()?;
+let claims: Value = verifier.verify(&token_str, &alg)?;
 ```
 
 ## Verifying custom claims
 ```rust
-let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
+let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret")?;
 let verifier = Verifier::create()
     .claim_equals("my_claim0", "value")
     .claim_matches("my_claim1", "value[0-9]")
     .claim_equals_one_of("my_claim2", &["value0", "value1"])
     .claim_matches_one_of("my_claim3", &[regex0, regex1])
-    .build().unwrap();
-let claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    .build()?;
+let claims: Value = verifier.verify(&token_str, &alg)?;
 ```
 
 ## Verifying timestamps (or not)
 ```rust
-let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
+let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret")?;
 let verifier = Verifier::create()
     .leeway(5)    // give this much leeway when validating exp, nbf and iat claims
     .ignore_exp() // ignore expiry
     .ignore_nbf() // ignore 'not before time'
     .ignore_iat() // ignore issue time
-    .build().unwrap();
-let claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    .build()?;
+let claims: Value = verifier.verify(&token_str, &alg)?;
 ```
 
 ## Just parse the header
@@ -110,6 +110,10 @@ let kid = match header.get("kid") {
 };
 ```
 
+## Just split a token into component parts
+```rust
+let TokenSlices {message, signature, header, claims } = split_token(token)?;
+```
 
 # Algorithms Supported
 

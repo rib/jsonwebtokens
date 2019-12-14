@@ -5,13 +5,12 @@ use std::time::SystemTime;
 use std::hash::{ Hash, Hasher };
 use std::collections::{ HashSet, HashMap };
 use regex::Regex;
-use serde_json::map::Map;
 use serde_json::value::Value;
 use serde::de::DeserializeOwned;
 
 use crate::{TokenSlices, split_token, TokenData};
 use crate::error::{Error, ErrorDetails};
-use crate::serialization::parse_jwt_part;
+use crate::serialization::decode_json_token_slice;
 use crate::crypto::algorithm::{Algorithm, AlgorithmID};
 
 
@@ -43,7 +42,7 @@ impl Hash for Pattern {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum VerifierKind {
+enum VerifierKind {
     Constant(String),
     Pattern(Pattern),
     Set(HashSet<String>),
@@ -73,10 +72,15 @@ impl Verifier {
     }
 
     fn verify_claims(&self,
-        claims: &Map<String, Value>,
+        claims: &serde_json::value::Value,
         validators: &HashMap<String, VerifierKind>,
         time_now: u64
     ) -> Result<(), Error> {
+
+        let claims = match claims {
+            serde_json::value::Value::Object(map) => map,
+            _ => return Err(Error::MalformedToken(ErrorDetails::new("Expected claims to be a JSON object")))
+        };
 
         if ! self.ignore_iat {
             match claims.get("iat") {
@@ -196,7 +200,7 @@ impl Verifier {
     ) -> Result<TokenData, Error>
     {
         let TokenSlices {message, signature, header, claims } = split_token(token.as_ref())?;
-        let header = parse_jwt_part(header)?;
+        let header = decode_json_token_slice(header)?;
 
         match header.get("alg") {
             Some(serde_json::value::Value::String(alg)) => {
@@ -219,7 +223,7 @@ impl Verifier {
             _ => return Err(Error::AlgorithmMismatch())
         }
 
-        let claims = parse_jwt_part(claims)?;
+        let claims = decode_json_token_slice(claims)?;
         self.verify_claims(&claims, &self.claim_validators, time_now)?;
 
         Ok(TokenData { header: header, claims: Some(claims), _extensible: () })
@@ -239,7 +243,6 @@ impl Verifier {
         match self.verify_for_time(token.as_ref(), algorithm, timestamp) {
             Ok(data) => {
                 if let Some(claims) = data.claims {
-                    let claims = serde_json::value::Value::Object(claims);
                     serde_json::from_value(claims)
                         .map_err(|e| Error::MalformedToken(ErrorDetails::map("Failed to deserialize json into custom claims struct", e)))
                 } else {

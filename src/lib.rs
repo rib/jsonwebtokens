@@ -1,6 +1,3 @@
-use serde_json::map::Map;
-use serde_json::value::Value;
-
 pub mod error;
 use error::{Error, ErrorDetails};
 
@@ -12,7 +9,7 @@ pub use crypto::algorithm::{Algorithm, AlgorithmID};
 
 mod pem;
 mod serialization;
-use serialization::parse_jwt_part;
+use serialization::decode_json_token_slice;
 
 use serde::ser::Serialize;
 
@@ -66,21 +63,21 @@ pub fn split_token<'a>(token: &'a str) -> Result<TokenSlices<'a>, Error> {
 
 #[derive(Debug)]
 pub struct TokenData {
-    pub header: Map<String, Value>,
-    pub claims: Option<Map<String, Value>>,
+    pub header: serde_json::value::Value,
+    pub claims: Option<serde_json::value::Value>,
 
     #[doc(hidden)]
     _extensible: (),
 }
 
-pub fn decode_header_only(token: impl AsRef<str>) -> Result<Map<String, Value>, Error> {
+pub fn decode_header_only(token: impl AsRef<str>) -> Result<serde_json::value::Value, Error> {
     let TokenSlices { header, .. } = split_token(token.as_ref())?;
-    parse_jwt_part(header)
+    decode_json_token_slice(header)
 }
 
 pub fn decode_only(token: impl AsRef<str>) -> Result<TokenData, Error> {
     let TokenSlices { header, claims, .. } = split_token(token.as_ref())?;
-    let header = parse_jwt_part(header)?;
-    let claims = parse_jwt_part(claims)?;
+    let header = decode_json_token_slice(header)?;
+    let claims = decode_json_token_slice(claims)?;
     Ok(TokenData { header: header, claims: Some(claims), _extensible: () })
 }
