@@ -8,6 +8,15 @@ jwt-rust = "1"
 serde_json = "1"
 ```
 
+Then, in your code:
+```rust
+use serde_json::json;
+use serde_json::value::Value;
+
+use jwt_rust as jwt;
+use jwt::{Algorithm, AlgorithmID, Verifier};
+```
+
 # Usage
 
 The main two types are `Algorithm` which encapsulates a chosen cryptographic
