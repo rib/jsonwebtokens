@@ -42,7 +42,7 @@ fn missing_alg() {
     let alg = Algorithm::new_unsecured().unwrap();
     let header = json!({ });
     let claims = json!({ "aud": "test" });
-    let token_str = jwt::raw::encode(&header, &claims, &alg).unwrap();
+    let token_str = jwt::encode(&header, &claims, &alg).unwrap();
 
     let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
     let validator = Verifier::create().build().unwrap();
@@ -56,7 +56,7 @@ fn wrong_alg() {
 
     let header = json!({ "alg": "HS256" });
     let claims = json!({ "aud": "test" });
-    let token_str = jwt::raw::encode(&header, &claims, &alg).unwrap();
+    let token_str = jwt::encode(&header, &claims, &alg).unwrap();
 
     let validator = Verifier::create().build().unwrap();
     let _claims: Value = validator.verify(&token_str, &alg).unwrap();
@@ -72,7 +72,7 @@ fn round_trip_claims() {
         "exp": get_time() + 10000,
     });
     let header = json!({"alg": alg.get_jwt_name()});
-    let token = jwt::raw::encode(&header, &my_claims, &alg).unwrap();
+    let token = jwt::encode(&header, &my_claims, &alg).unwrap();
 
     let verifier = Verifier::create().build().unwrap();
     let claims: Value = verifier.verify(token, &alg).unwrap();

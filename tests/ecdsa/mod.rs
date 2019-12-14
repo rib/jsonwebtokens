@@ -46,7 +46,7 @@ fn wrong_ecdsa_curve() {
     let alg = Algorithm::new_ecdsa_pem_signer(AlgorithmID::ES384, privkey_pem).unwrap();
 
     let header = json!({"alg": alg.get_jwt_name(), "my_hdr": "my_hdr_val"});
-    let _token = jwt::raw::encode(&header, &my_claims, &alg).unwrap();
+    let _token = jwt::encode(&header, &my_claims, &alg).unwrap();
 }
 
 #[test]
@@ -71,7 +71,7 @@ fn round_trip_claims() {
         let alg = Algorithm::new_ecdsa_pem_signer(keypair.id, keypair.privkey).unwrap();
 
         let header = json!({"alg": alg.get_jwt_name(), "my_hdr": "my_hdr_val"});
-        let token = jwt::raw::encode(&header, &my_claims, &alg).unwrap();
+        let token = jwt::encode(&header, &my_claims, &alg).unwrap();
 
         let alg = Algorithm::new_ecdsa_pem_verifier(keypair.id, keypair.pubkey).unwrap();
         let verifier = Verifier::create().build().unwrap();

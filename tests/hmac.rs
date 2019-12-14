@@ -30,7 +30,7 @@ fn hmac_256_bad_secret() {
     let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
     let header = json!({ "alg": "HS256" });
     let claims = json!({ "aud": "test" });
-    let token_str = jwt::raw::encode(&header, &claims, &alg).unwrap();
+    let token_str = jwt::encode(&header, &claims, &alg).unwrap();
 
     let alg = Algorithm::new_hmac(AlgorithmID::HS256, "wrong-secret").unwrap();
     let validator = Verifier::create().build().unwrap();
@@ -44,7 +44,7 @@ fn missing_alg() {
 
     let header = json!({ });
     let claims = json!({ "aud": "test" });
-    let token_str = jwt::raw::encode(&header, &claims, &alg).unwrap();
+    let token_str = jwt::encode(&header, &claims, &alg).unwrap();
 
     let validator = Verifier::create().build().unwrap();
     let _claims: Value = validator.verify(&token_str, &alg).unwrap();
@@ -59,7 +59,7 @@ fn round_trip_claims() {
         "exp": get_time() + 10000,
     });
     let header = json!({"alg": "HS256"});
-    let token = jwt::raw::encode(&header, &my_claims, &alg).unwrap();
+    let token = jwt::encode(&header, &my_claims, &alg).unwrap();
 
     let verifier = Verifier::create().build().unwrap();
     let claims: Value = verifier.verify(token, &alg).unwrap();
@@ -76,7 +76,7 @@ fn round_trip_claims_and_custom_header() {
         "exp": get_time() + 10000,
     });
     let header = json!({"alg": "HS256", "my_hdr": "my_hdr_val"});
-    let token = jwt::raw::encode(&header, &my_claims, &alg).unwrap();
+    let token = jwt::encode(&header, &my_claims, &alg).unwrap();
 
     let verifier = Verifier::create().build().unwrap();
 
@@ -104,7 +104,7 @@ fn round_trip_claims_and_kid() {
         "kid": alg.get_kid(),
         "my_hdr": "my_hdr_val"
     });
-    let token = jwt::raw::encode(&header, &my_claims, &alg).unwrap();
+    let token = jwt::encode(&header, &my_claims, &alg).unwrap();
 
     let verifier = Verifier::create().build().unwrap();
 
@@ -134,7 +134,7 @@ fn round_trip_claims_and_wrong_kid() {
         "kid": "kid4321",
         "my_hdr": "my_hdr_val"
     });
-    let token = jwt::raw::encode(&header, &my_claims, &alg).unwrap();
+    let token = jwt::encode(&header, &my_claims, &alg).unwrap();
 
     let verifier = Verifier::create().build().unwrap();
 

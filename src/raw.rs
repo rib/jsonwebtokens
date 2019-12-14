@@ -21,16 +21,6 @@ pub(crate) fn b64_encode_part<T: Serialize>(input: &T) -> Result<String, Error> 
     Ok(b64_encode(json.as_bytes()))
 }
 
-
-pub fn encode<H: Serialize, C: Serialize>(header: &H, claims: &C, algorithm: &Algorithm) -> Result<String, Error> {
-    let encoded_header = b64_encode_part(&header)?;
-    let encoded_claims = b64_encode_part(&claims)?;
-    let message = [encoded_header.as_ref(), encoded_claims.as_ref()].join(".");
-    let signature = algorithm.sign(&message)?;
-    Ok([message, signature].join("."))
-}
-
-
 /// Takes the result of a str split and ensure we only get 2 parts
 /// Errors if we don't
 macro_rules! expect_two {

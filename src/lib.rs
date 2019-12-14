@@ -10,3 +10,6 @@ mod pem;
 
 pub mod raw;
 pub use raw::TokenData;
+
+mod encode;
+pub use encode::encode;
