@@ -17,8 +17,8 @@ flexible way of describing how incoming tokens should be checked.
 Creating an `Algorithm` up front means we don't have to repeatedly parse
 associated secrets or keys.
 
-A builder pattern is used for describing verifiers so it should be possible
-to extend its configurability if necessary for different use cases.
+The builder pattern used for describing a `Verifier` keeps code ergonimic no
+matter if you have simple or elaborate verification requirements.
 
 There is also a low-level [(`::raw`)](#Low-level-Usage) API available in
 case you need more control over splitting, decoding, deserializing and
