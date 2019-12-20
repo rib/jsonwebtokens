@@ -1,3 +1,6 @@
+[![jsonwebtokens](https://img.shields.io/crates/v/jsonwebtokens?style=flat-square)](https://crates.io/crates/jsonwebtokens)
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+
 
 A Rust implementation of [Json Web Tokens](https://tools.ietf.org/html/rfc7519)
 
@@ -19,12 +22,12 @@ use jwt::{Algorithm, AlgorithmID, Verifier};
 
 # Usage
 
-The main two types are `Algorithm` which encapsulates a chosen cryptographic
-function for signing or verifying tokens, and a `Verifier` that gives a
-flexible way of describing how incoming tokens should be checked.
+The main two types are `Algorithm` and `Verifier`. An `Algorithm` encapsulates
+a cryptographic function for signing or verifying tokens, and a `Verifier`
+handles checking the signature and claims of a token, given an `Algorithm`.
 
-Creating an `Algorithm` up front means we don't have to repeatedly parse
-associated secrets or keys.
+Creating an `Algorithm` separately ensures any parsing of secrets or keys only
+needs to happen once.
 
 The builder pattern used for describing a `Verifier` keeps code ergonimic no
 matter if you have simple or elaborate verification requirements.
@@ -178,3 +181,18 @@ PS512 | RSASSA-PSS using SHA-512 hash algorithm
 ES256 | ECDSA using P-256 curve and SHA-256 hash algorithm (only PKCS#8 format PEM)
 ES384 | ECDSA using P-384 curve and SHA-384 hash algorithm (only PKCS#8 format PEM)
 none | No digital signature or MAC value included
+
+# Based on
+
+Originally this project started as a few small changes to
+[jsonwebtoken](https://crates.io/crates/jsonwebtoken) (without an 's'), to
+meet the needs I had while building
+[jsonwebtokens-cognito](https://crates.io/crates/jsonwebtokens-cognito) but
+eventually the design and implementation became substantially different with
+the creation of the `Algorithm` API and the customizable `Verifier`
+API.
+
+The project borrows design ideas from a variety of pre-existing Json Web
+Token libraries. In particular it shamelessly steals ideas from
+[node-jsonwebtoken](https://github.com/auth0/node-jsonwebtoken) and
+[java-jwt](https://github.com/auth0/java-jwt).
