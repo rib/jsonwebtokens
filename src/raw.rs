@@ -49,6 +49,36 @@ pub struct TokenSlices<'a> {
 
 /// Splits a token that's in the form `"HEADER.CLAIMS.SIGNATURE"` into useful constituent
 /// parts for further parsing and validation.
+///
+/// For example:
+/// ```rust
+/// # use jsonwebtokens as jwt;
+/// # use jwt::raw::{self, TokenSlices};
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let token = "HEADER.CLAIMS.SIGNATURE";
+/// let TokenSlices {message, signature, header, claims } = raw::split_token(token)?;
+/// println!("message: {}", message);
+/// println!("signature: {}", signature);
+/// println!("header: {}", header);
+/// println!("claims: {}", claims);
+/// # Ok(())
+/// # }
+/// ```
+/// will output:
+/// ```bash
+/// message: HEADER.CLAIMS
+/// signature: SIGNATURE
+/// header: HEADER
+/// claims: CLAIMS
+/// ```
+///
+/// After splitting a token, it can be further processed by using
+/// [raw::verify_signature_only](raw::verify_signature_only) to check the token's
+/// signature, then [raw::decode_json_token_slice](raw::decode_json_token_slice)
+/// can be used to decode the header and/or the claims, and finally the
+/// [Verifier::verify_claims_only](Verifier::verify_claims_only) api can be used
+/// to check the claims.
+///
 pub fn split_token<'a>(token: &'a str) -> Result<TokenSlices<'a>, Error> {
     let (signature, message) = expect_two!(token.rsplitn(2, '.'));
     let (header, claims) = expect_two!(message.splitn(2, '.'));
@@ -61,8 +91,30 @@ pub fn split_token<'a>(token: &'a str) -> Result<TokenSlices<'a>, Error> {
     })
 }
 
-/// Decodes a base64 encoded token header or claims and deserializes from JSON so we can run validation on it
-pub(crate) fn decode_json_token_slice(encoded_slice: impl AsRef<str>) -> Result<serde_json::value::Value, Error> {
+/// Decodes a base64 encoded token header or claims and deserializes from JSON
+///
+/// For example to decode just a token's header:
+/// ```rust
+/// # use jsonwebtokens as jwt;
+/// # use jwt::raw::{self, TokenSlices, decode_json_token_slice};
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiQGIuY29tIiwiY29tcGFueSI6IkFDTUUiLCJleHAiOjI1MzI1MjQ4OTF9.9r56oF7ZliOBlOAyiOFperTGxBtPykRQiWNFxhDCW98";
+/// let TokenSlices {header, .. } = raw::split_token(token)?;
+/// let header = raw::decode_json_token_slice(header)?;
+/// # Ok(())
+/// # }
+/// ```
+/// or similarly just a token's claims:
+/// ```rust
+/// # use jsonwebtokens as jwt;
+/// # use jwt::raw::{self, TokenSlices, decode_json_token_slice};
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiQGIuY29tIiwiY29tcGFueSI6IkFDTUUiLCJleHAiOjI1MzI1MjQ4OTF9.9r56oF7ZliOBlOAyiOFperTGxBtPykRQiWNFxhDCW98";
+/// let TokenSlices {claims, .. } = raw::split_token(token)?;
+/// let claims = raw::decode_json_token_slice(claims)?;
+/// # Ok(())
+/// # }
+pub fn decode_json_token_slice(encoded_slice: impl AsRef<str>) -> Result<serde_json::value::Value, Error> {
     let s = String::from_utf8(b64_decode(encoded_slice.as_ref())?)
         .map_err(|e| Error::InvalidInput(ErrorDetails::map("utf8 decode failure", e)))?;
     let value = serde_json::from_str(&s)
