@@ -1,7 +1,7 @@
 use serde_json::json;
 use serde_json::value::Value;
 
-use jwt_rust as jwt;
+use jsonwebtokens as jwt;
 use jwt::{Algorithm, AlgorithmID, Verifier};
 
 use crate::common::get_time;

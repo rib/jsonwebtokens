@@ -1,5 +1,5 @@
 [package]
-name = "jwt-rust"
+name = "jsonwebtokens"
 version = "1.0.0-alpha.4"
 authors = ["Robert Bragg <robert@sixbynine.org>"]
 license = "MIT"

@@ -1,6 +1,6 @@
 use serde_json::json;
 
-use jwt_rust as jwt;
+use jsonwebtokens as jwt;
 use jwt::{Algorithm, AlgorithmID, Verifier, error::Error};
 
 mod common;

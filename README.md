@@ -4,7 +4,7 @@ A Rust implementation of [Json Web Tokens](https://tools.ietf.org/html/rfc7519)
 # Installation
 
 ```
-jwt-rust = "1"
+jsonwebtokens = "1"
 serde_json = "1"
 ```
 
@@ -13,7 +13,7 @@ Then, in your code:
 use serde_json::json;
 use serde_json::value::Value;
 
-use jwt_rust as jwt;
+use jsonwebtokens as jwt;
 use jwt::{Algorithm, AlgorithmID, Verifier};
 ```
 
