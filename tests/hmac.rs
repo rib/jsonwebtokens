@@ -4,7 +4,8 @@ use serde_json::json;
 use serde_json::value::Value;
 
 use jsonwebtokens as jwt;
-use jwt::{raw, Algorithm, AlgorithmID, Verifier};
+use jwt::{raw, Algorithm, AlgorithmID, Verifier, TokenData};
+use jwt::raw::TokenSlices;
 
 mod common;
 use common::get_time;
@@ -81,12 +82,10 @@ fn round_trip_claims_and_custom_header() {
     let verifier = Verifier::create().build().unwrap();
 
     // We have to use the lower-level for_time API if we want to see the header
-    let token_data = verifier.verify_for_time(token, &alg, get_time()).unwrap();
+    let TokenData { header, claims, .. } = verifier.verify_for_time(token, &alg, get_time()).unwrap();
 
-    let verified_claims = token_data.claims.expect("no claims");
-
-    assert_eq!(my_claims, verified_claims);
-    assert_eq!(token_data.header.get("my_hdr").unwrap(), "my_hdr_val");
+    assert_eq!(my_claims, claims);
+    assert_eq!(header.get("my_hdr").unwrap(), "my_hdr_val");
 }
 
 #[test]
@@ -109,13 +108,11 @@ fn round_trip_claims_and_kid() {
     let verifier = Verifier::create().build().unwrap();
 
     // We have to use the lower-level for_time API if we want to see the header
-    let token_data = verifier.verify_for_time(token, &alg, get_time()).unwrap();
+    let TokenData {header, claims, ..} = verifier.verify_for_time(token, &alg, get_time()).unwrap();
 
-    let verified_claims = token_data.claims.expect("no claims");
-
-    assert_eq!(my_claims, verified_claims);
-    assert_eq!(token_data.header.get("kid").unwrap(), "kid1234");
-    assert_eq!(token_data.header.get("my_hdr").unwrap(), "my_hdr_val");
+    assert_eq!(my_claims, claims);
+    assert_eq!(header.get("kid").unwrap(), "kid1234");
+    assert_eq!(header.get("my_hdr").unwrap(), "my_hdr_val");
 }
 
 #[test]
@@ -139,13 +136,11 @@ fn round_trip_claims_and_wrong_kid() {
     let verifier = Verifier::create().build().unwrap();
 
     // We have to use the lower-level for_time API if we want to see the header
-    let token_data = verifier.verify_for_time(token, &alg, get_time()).unwrap();
+    let TokenData { header, claims, .. } = verifier.verify_for_time(token, &alg, get_time()).unwrap();
 
-    let verified_claims = token_data.claims.expect("no claims");
-
-    assert_eq!(my_claims, verified_claims);
-    assert_eq!(token_data.header.get("kid").unwrap(), "kid1234");
-    assert_eq!(token_data.header.get("my_hdr").unwrap(), "my_hdr_val");
+    assert_eq!(my_claims, claims);
+    assert_eq!(header.get("kid").unwrap(), "kid1234");
+    assert_eq!(header.get("my_hdr").unwrap(), "my_hdr_val");
 }
 
 #[test]
@@ -195,13 +190,21 @@ fn only_decode_token_header() {
 }
 
 #[test]
+fn only_decode_token_header_with_slice_api() {
+    let token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjb21wYW55IjoiMTIzNDU2Nzg5MCIsInN1YiI6IkpvaG4gRG9lIn0.S";
+    let TokenSlices { header, .. } = raw::split_token(token).unwrap();
+    let header = raw::decode_json_token_slice(header).unwrap();
+    assert_eq!(header.get("alg").expect("missing alg"), "HS256");
+    assert_eq!(header.get("typ").expect("missing typ"), "JWT");
+}
+
+#[test]
 fn only_decode_token() {
     let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiQGIuY29tIiwiY29tcGFueSI6IkFDTUUiLCJleHAiOjI1MzI1MjQ4OTF9.9r56oF7ZliOBlOAyiOFperTGxBtPykRQiWNFxhDCW98";
-    let token_data = raw::decode_only(token).unwrap();
-    let claims = token_data.claims.expect("no claims");
+    let TokenData { header, claims, .. } = raw::decode_only(token).unwrap();
 
-    assert_eq!(token_data.header.get("alg").expect("missing alg"), "HS256");
-    assert_eq!(token_data.header.get("typ").expect("missing typ"), "JWT");
+    assert_eq!(header.get("alg").expect("missing alg"), "HS256");
+    assert_eq!(header.get("typ").expect("missing typ"), "JWT");
     assert_eq!(claims.get("sub").expect("no sub"), "b@b.com");
     assert_eq!(claims.get("company").expect("no company"), "ACME");
     assert_eq!(claims.get("exp").expect("no exp"), 2532524891u64);
@@ -209,9 +212,9 @@ fn only_decode_token() {
 
 #[test]
 #[should_panic(expected = "MalformedToken")]
-fn only_decode_token_missing_parts() {
+fn split_token_missing_parts() {
     let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9";
-    let _token_data = raw::decode_only(token).unwrap();
+    let _token_slices = raw::split_token(token).unwrap();
 }
 
 #[test]

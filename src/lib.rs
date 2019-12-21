@@ -9,7 +9,14 @@ pub use crypto::algorithm::{Algorithm, AlgorithmID};
 mod pem;
 
 pub mod raw;
-pub use raw::TokenData;
 
 mod encode;
 pub use encode::encode;
+
+pub struct TokenData {
+    pub header: serde_json::value::Value,
+    pub claims: serde_json::value::Value,
+
+    #[doc(hidden)]
+    pub _extensible: (),
+}

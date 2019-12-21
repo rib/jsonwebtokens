@@ -5,9 +5,9 @@ use std::hash::{ Hash, Hasher };
 use std::collections::{ HashSet, HashMap };
 use regex::Regex;
 use serde_json::value::Value;
-use serde::de::DeserializeOwned;
 
 use crate::error::{Error, ErrorDetails};
+use crate::TokenData;
 use crate::raw::*;
 use crate::crypto::algorithm::{Algorithm};
 
@@ -203,14 +203,14 @@ impl Verifier {
         let claims = decode_json_token_slice(claims)?;
         self.verify_claims_only(&claims, time_now)?;
 
-        Ok(TokenData { header: header, claims: Some(claims), _extensible: () })
+        Ok(TokenData { header: header, claims: claims, _extensible: () })
     }
 
-    pub fn verify<C: DeserializeOwned, T: AsRef<str>>(
+    pub fn verify(
         &self,
-        token: T,
+        token: impl AsRef<str>,
         algorithm: &Algorithm,
-    ) -> Result<C, Error>
+    ) -> Result<serde_json::value::Value, Error>
     {
         let timestamp = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
             Ok(n) => n.as_secs(),
@@ -218,14 +218,7 @@ impl Verifier {
         };
 
         match self.verify_for_time(token.as_ref(), algorithm, timestamp) {
-            Ok(data) => {
-                if let Some(claims) = data.claims {
-                    serde_json::from_value(claims)
-                        .map_err(|e| Error::MalformedToken(ErrorDetails::map("Failed to deserialize json into custom claims struct", e)))
-                } else {
-                    Err(Error::InvalidInput(ErrorDetails::new("No claims to deserialize")))
-                }
-            },
+            Ok(data) => Ok(data.claims),
             Err(error) => Err(error)
         }
     }

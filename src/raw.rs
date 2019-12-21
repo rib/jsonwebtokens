@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use serde::ser::Serialize;
 
+use crate::TokenData;
 use crate::error::{Error, ErrorDetails};
 use crate::crypto::algorithm::{Algorithm, AlgorithmID};
 
@@ -127,20 +128,11 @@ pub fn decode_header_only(token: impl AsRef<str>) -> Result<serde_json::value::V
     decode_json_token_slice(header)
 }
 
-#[derive(Debug)]
-pub struct TokenData {
-    pub header: serde_json::value::Value,
-    pub claims: Option<serde_json::value::Value>,
-
-    #[doc(hidden)]
-    pub _extensible: (),
-}
-
 pub fn decode_only(token: impl AsRef<str>) -> Result<TokenData, Error> {
     let TokenSlices { header, claims, .. } = split_token(token.as_ref())?;
     let header = decode_json_token_slice(header)?;
     let claims = decode_json_token_slice(claims)?;
-    Ok(TokenData { header: header, claims: Some(claims), _extensible: () })
+    Ok(TokenData { header: header, claims: claims, _extensible: () })
 }
 
 pub fn verify_signature_only(
