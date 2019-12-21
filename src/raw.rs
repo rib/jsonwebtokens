@@ -94,7 +94,7 @@ pub fn split_token<'a>(token: &'a str) -> Result<TokenSlices<'a>, Error> {
 
 /// Decodes a base64 encoded token header or claims and deserializes from JSON
 ///
-/// For example to decode just a token's header:
+/// For example to just decode a token's header:
 /// ```rust
 /// # use jsonwebtokens as jwt;
 /// # use jwt::raw::{self, TokenSlices, decode_json_token_slice};
