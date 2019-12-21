@@ -113,7 +113,7 @@ fn round_trip_claims_and_kid() {
     });
     let header = json!({
         "alg": alg.name(),
-        "kid": alg.get_kid(),
+        "kid": alg.kid(),
         "my_hdr": "my_hdr_val"
     });
     let token = jwt::encode(&header, &my_claims, &alg).unwrap();

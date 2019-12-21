@@ -192,7 +192,7 @@ pub fn verify_signature_only(
         Some(serde_json::value::Value::String(alg)) => {
             let alg = AlgorithmID::from_str(alg)?;
 
-            if alg != algorithm.get_id() {
+            if alg != algorithm.id() {
                 return Err(Error::AlgorithmMismatch());
             }
 

@@ -210,7 +210,7 @@ pub struct Algorithm
 impl Algorithm
 {
     /// Returns the `AlgorithmID` that was used to construct the `Algorithm`
-    pub fn get_id(&self) -> AlgorithmID {
+    pub fn id(&self) -> AlgorithmID {
         self.id
     }
 
@@ -226,7 +226,7 @@ impl Algorithm
     }
 
     /// Returns a reference to any associated `kid` set via `set_kid()`
-    pub fn get_kid(&self) -> Option<&str> {
+    pub fn kid(&self) -> Option<&str> {
         match &self.kid {
             Some(string) => Some(string.as_ref()),
             None => None
