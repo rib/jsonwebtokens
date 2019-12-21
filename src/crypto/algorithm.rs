@@ -131,7 +131,7 @@ impl FromStr for AlgorithmID {
 
 impl From<Algorithm> for &'static str {
     fn from(alg: Algorithm) -> Self {
-        alg.get_jwt_name()
+        alg.name()
     }
 }
 
@@ -215,7 +215,7 @@ impl Algorithm
     }
 
     /// Returns the algorithm name as standardized in [RFC 7519](https://tools.ietf.org/html/rfc7519)
-    pub fn get_jwt_name(&self) -> &'static str {
+    pub fn name(&self) -> &'static str {
         self.id.into()
     }
 

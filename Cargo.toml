@@ -1,6 +1,6 @@
 [package]
 name = "jsonwebtokens"
-version = "1.0.0-alpha.6"
+version = "1.0.0-alpha.7"
 authors = ["Robert Bragg <robert@sixbynine.org>"]
 license = "MIT"
 description = "A Json Web Token implementation for Rust"

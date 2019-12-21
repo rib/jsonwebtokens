@@ -12,7 +12,7 @@ use common::get_time;
 #[test]
 fn jwt_name() {
     let alg = Algorithm::new_unsecured().unwrap();
-    assert_eq!(alg.get_jwt_name(), "none");
+    assert_eq!(alg.name(), "none");
 }
 
 #[test]
@@ -71,7 +71,7 @@ fn round_trip_claims() {
         "company": "ACME",
         "exp": get_time() + 10000,
     });
-    let header = json!({"alg": alg.get_jwt_name()});
+    let header = json!({"alg": alg.name()});
     let token = jwt::encode(&header, &my_claims, &alg).unwrap();
 
     let verifier = Verifier::create().build().unwrap();

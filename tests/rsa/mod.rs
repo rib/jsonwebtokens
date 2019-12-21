@@ -66,7 +66,7 @@ fn round_trip_claims() {
     for &id in RSA_ALGORITHMS {
         let alg = Algorithm::new_rsa_pem_signer(id, privkey_pem).unwrap();
 
-        let header = json!({"alg": alg.get_jwt_name(), "my_hdr": "my_hdr_val"});
+        let header = json!({"alg": alg.name(), "my_hdr": "my_hdr_val"});
         let token = jwt::encode(&header, &my_claims, &alg).unwrap();
 
         let alg = Algorithm::new_rsa_pem_verifier(id, pubkey_pem).unwrap();
@@ -91,7 +91,7 @@ fn round_trip_claims_and_custom_header() {
     for &id in RSA_ALGORITHMS {
         let alg = Algorithm::new_rsa_pem_signer(id, privkey_pem).unwrap();
 
-        let header = json!({"alg": alg.get_jwt_name(), "kid": "kid1234", "my_hdr": "my_hdr_val"});
+        let header = json!({"alg": alg.name(), "kid": "kid1234", "my_hdr": "my_hdr_val"});
         let token = jwt::encode(&header, &my_claims, &alg).unwrap();
 
         let mut alg = Algorithm::new_rsa_pem_verifier(id, pubkey_pem).unwrap();
@@ -119,7 +119,7 @@ fn dont_allow_sign_with_verify_algorithm() {
 
     let verify_alg = Algorithm::new_rsa_pem_verifier(AlgorithmID::RS256, keypair).unwrap();
 
-    let header = json!({"alg": verify_alg.get_jwt_name()});
+    let header = json!({"alg": verify_alg.name()});
     let _token = jwt::encode(&header, &my_claims, &verify_alg).unwrap();
 }
 
@@ -135,7 +135,7 @@ fn dont_allow_verify_with_sign_algorithm() {
 
     let sign_alg = Algorithm::new_rsa_pem_signer(AlgorithmID::RS256, keypair).unwrap();
 
-    let header = json!({"alg": sign_alg.get_jwt_name()});
+    let header = json!({"alg": sign_alg.name()});
     let token = jwt::encode(&header, &my_claims, &sign_alg).unwrap();
 
     let verifier = Verifier::create().build().unwrap();
@@ -154,7 +154,7 @@ fn rsa_modulus_exponent() {
     let n = "yRE6rHuNR0QbHO3H3Kt2pOKGVhQqGZXInOduQNxXzuKlvQTLUTv4l4sggh5_CYYi_cvI-SXVT9kPWSKXxJXBXd_4LkvcPuUakBoAkfh-eiFVMh2VrUyWyj3MFl0HTVF9KwRXLAcwkREiS3npThHRyIxuy0ZMeZfxVL5arMhw1SRELB8HoGfG_AtH89BIE9jDBHZ9dLelK9a184zAf8LwoPLxvJb3Il5nncqPcSfKDDodMFBIMc4lQzDKL5gvmiXLXB1AGLm8KBjfE8s3L5xqi-yUod-j8MtvIj812dkS4QMiRVN_by2h3ZY8LYVGrqZXZTcgn2ujn8uKjXLZVD5TdQ";
     let e = "AQAB";
 
-    let header = json!({"alg": sign_alg.get_jwt_name() });
+    let header = json!({"alg": sign_alg.name() });
     let token = jwt::encode(&header, &my_claims, &sign_alg).unwrap();
 
     let verify_alg = Algorithm::new_rsa_n_e_b64_verifier(AlgorithmID::RS256, n, e).unwrap();
@@ -177,7 +177,7 @@ fn roundtrip_with_jwtio_example_jey() {
     for &id in RSA_ALGORITHMS {
         let alg = Algorithm::new_rsa_pem_signer(id, privkey_pem).unwrap();
 
-        let header = json!({"alg": alg.get_jwt_name()});
+        let header = json!({"alg": alg.name()});
         let token = jwt::encode(&header, &my_claims, &alg).unwrap();
 
         let alg = Algorithm::new_rsa_pem_verifier(id, pubkey_pem).unwrap();

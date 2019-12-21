@@ -41,7 +41,7 @@ verifying tokens.
 with a symmetric secret:
 ```rust
 let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret")?;
-let header = json!({ "alg": alg.get_jwt_name() });
+let header = json!({ "alg": alg.name() });
 let claims = json!({ "foo": "bar" });
 let token = encode(&header, &claims, &alg)?;
 ```
@@ -53,7 +53,7 @@ let alg = Algorithm::new_hmac_b64(AlgorithmID::HS256, secret_data)?;
 with an RSA private key:
 ```rust
 let alg = Algorithm::new_rsa_pem_signer(AlgorithmID::RS256, pem_data)?;
-let header = json!({ "alg": alg.get_jwt_name() });
+let header = json!({ "alg": alg.name() });
 let claims = json!({ "foo": "bar" });
 let token = encode(&header, &claims, &alg)?;
 ```

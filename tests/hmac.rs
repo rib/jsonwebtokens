@@ -99,7 +99,7 @@ fn round_trip_claims_and_kid() {
         "exp": get_time() + 10000,
     });
     let header = json!({
-        "alg": alg.get_jwt_name(),
+        "alg": alg.name(),
         "kid": alg.get_kid(),
         "my_hdr": "my_hdr_val"
     });
@@ -127,7 +127,7 @@ fn round_trip_claims_and_wrong_kid() {
         "exp": get_time() + 10000,
     });
     let header = json!({
-        "alg": alg.get_jwt_name(),
+        "alg": alg.name(),
         "kid": "kid4321",
         "my_hdr": "my_hdr_val"
     });
