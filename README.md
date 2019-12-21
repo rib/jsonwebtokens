@@ -1,5 +1,6 @@
 [![jsonwebtokens](https://img.shields.io/crates/v/jsonwebtokens?style=flat-square)](https://crates.io/crates/jsonwebtokens)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+[![Build Status](https://travis-ci.org/rib/jsonwebtokens.svg)](https://travis-ci.org/rib/jsonwebtokens)
 
 
 A Rust implementation of [Json Web Tokens](https://tools.ietf.org/html/rfc7519)
