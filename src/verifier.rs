@@ -65,6 +65,7 @@ pub struct Verifier {
 
 impl Verifier {
 
+    /// Start constructing a Verifier and configuring what claims should be verified.
     pub fn create() -> VerifierBuilder {
         VerifierBuilder::new()
     }
@@ -189,6 +190,7 @@ impl Verifier {
         Ok(())
     }
 
+    /// Verify a token's signature and its claims, given a specific unix epoch timestamp
     pub fn verify_for_time(
         &self,
         token: impl AsRef<str>,
@@ -206,6 +208,7 @@ impl Verifier {
         Ok(TokenData { header: header, claims: claims, _extensible: () })
     }
 
+    /// Verify a token's signature and its claims
     pub fn verify(
         &self,
         token: impl AsRef<str>,
@@ -269,11 +272,13 @@ impl VerifierBuilder {
         self.claim_equals("nonce", nonce)
     }
 
+    /// Check that a claim has a specific string value
     pub fn claim_equals(&mut self, claim: impl Into<String>, value: impl Into<String>) -> &mut Self {
         self.claim_validators.insert(claim.into(), VerifierKind::Constant(value.into()));
         self
     }
 
+    /// Check that a claim equals one of the given string values
     pub fn claim_equals_one_of(&mut self, claim: impl Into<String>, values: &[&str]) -> &mut Self
     {
         let hash_set: HashSet<String> = values.into_iter().cloned().map(|s| s.to_owned()).collect();
@@ -281,6 +286,7 @@ impl VerifierBuilder {
         self
     }
 
+    /// Check that the claim matches the given regular expression
     pub fn claim_matches(&mut self, claim: impl Into<String>, value: impl Into<Regex>) -> &mut Self {
         self.claim_validators.insert(claim.into(), VerifierKind::Pattern(Pattern(value.into())));
         self
@@ -288,6 +294,8 @@ impl VerifierBuilder {
 
     // Maybe this could be more ergonomic if it took &[&str] strings but then we'd have to
     // defer compiling the regular expressions until .build() which would be a bit of a pain
+
+    /// Check that the claim matches one of the given regular expressions
     pub fn claim_matches_one_of(&mut self, claim: impl Into<String>, values: &[Regex]) -> &mut Self
     {
         let hash_set: HashSet<Pattern> = values
@@ -299,26 +307,31 @@ impl VerifierBuilder {
         self
     }
 
+    /// Sets a leeway (in seconds) should be allowed when checking exp, nbf and iat claims
     pub fn leeway(&mut self, leeway: u32) -> &mut Self {
         self.leeway = leeway;
         self
     }
 
+    /// Don't check the 'exp' expiry claim
     pub fn ignore_exp(&mut self) -> &mut Self {
         self.ignore_exp = true;
         self
     }
 
+    /// Don't check the 'nbf' not before claim
     pub fn ignore_nbf(&mut self) -> &mut Self {
         self.ignore_nbf = true;
         self
     }
 
+    /// Don't check the 'iat' issued at claim
     pub fn ignore_iat(&mut self) -> &mut Self {
         self.ignore_iat = true;
         self
     }
 
+    /// Build the final Verifier
     pub fn build(&self) -> Result<Verifier, Error> {
         Ok(Verifier {
             leeway: self.leeway,

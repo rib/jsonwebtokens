@@ -45,7 +45,7 @@ let header = json!({ "alg": alg.name() });
 let claims = json!({ "foo": "bar" });
 let token = encode(&header, &claims, &alg)?;
 ```
-or if the secret isn't a string pass it base64 encoded:
+or if your secret is base64 encoded:
 ```rust
 let alg = Algorithm::new_hmac_b64(AlgorithmID::HS256, secret_data)?;
 ```

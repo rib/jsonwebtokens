@@ -233,6 +233,7 @@ impl Algorithm
         }
     }
 
+    /// Constructs a NOP algorithm for use with unsecured (unsigned) tokens
     pub fn new_unsecured() -> Result<Self, Error> {
         Ok(Algorithm {
             id: AlgorithmID::NONE,
@@ -242,6 +243,9 @@ impl Algorithm
         })
     }
 
+    /// Constructs a symmetric HMAC algorithm based on a given secret
+    ///
+    /// This algorithm may be used for signing and/or verifying signatures
     pub fn new_hmac(id: AlgorithmID, secret: impl Into<Vec<u8>>) -> Result<Self, Error> {
         ensure_hmac_id(id)?;
 
@@ -252,6 +256,12 @@ impl Algorithm
             _extensible: ()
         })
     }
+
+    /// Constructs a symmetric HMAC algorithm based on a given base64 secret
+    ///
+    /// This is a convenience api in case the secret you're using is base64 encoded
+    ///
+    /// This algorithm may be used for signing and/or verifying signatures
     pub fn new_hmac_b64(id: AlgorithmID, secret: impl AsRef<str>) -> Result<Self, Error> {
         ensure_hmac_id(id)?;
 
@@ -263,6 +273,9 @@ impl Algorithm
         })
     }
 
+    /// Constructs an ECDSA algorithm based on a PEM format private key
+    ///
+    /// This algorithm may only be used for signing tokens
     pub fn new_ecdsa_pem_signer(id: AlgorithmID, key: &[u8]) -> Result<Self, Error> {
         ensure_ecdsa_id(id)?;
 
@@ -278,6 +291,10 @@ impl Algorithm
             _extensible: ()
         })
     }
+
+    /// Constructs an ECDSA algorithm based on a PEM format public key
+    ///
+    /// This algorithm may only be used for verifying tokens
     pub fn new_ecdsa_pem_verifier(id: AlgorithmID, key: &[u8]) -> Result<Self, Error> {
         ensure_ecdsa_id(id)?;
 
@@ -292,6 +309,9 @@ impl Algorithm
         })
     }
 
+    /// Constructs an RSA algorithm based on a PEM format private key
+    ///
+    /// This algorithm may only be used for signing tokens
     pub fn new_rsa_pem_signer(id: AlgorithmID, key: &[u8]) -> Result<Self, Error> {
         ensure_rsa_id(id)?;
 
@@ -306,6 +326,10 @@ impl Algorithm
             _extensible: ()
         })
     }
+
+    /// Constructs an RSA algorithm based on a PEM format public key
+    ///
+    /// This algorithm may only be used for verifying tokens
     pub fn new_rsa_pem_verifier(id: AlgorithmID, key: &[u8]) -> Result<Self, Error> {
         ensure_rsa_id(id)?;
 
@@ -319,6 +343,13 @@ impl Algorithm
             _extensible: ()
         })
     }
+
+    /// Constructs an RSA algorithm based on modulus (n) and exponent (e) components
+    ///
+    /// In some situations (such as JWKS key sets), a public RSA key may be
+    /// described in terms of (base64 encoded) modulus and exponent values.
+    ///
+    /// This algorithm may only be used for verifying tokens
     pub fn new_rsa_n_e_b64_verifier(id: AlgorithmID, n_b64: &str, e_b64: &str) -> Result<Self, Error> {
         ensure_rsa_id(id)?;
 
@@ -333,6 +364,7 @@ impl Algorithm
         })
     }
 
+    /// Lower-level api that can be used to verify a signature for a given message
     pub fn verify(
         &self,
         kid: Option<&str>,
@@ -375,6 +407,7 @@ impl Algorithm
         }
     }
 
+    /// Lower-level api that can be used to calculate a signature for a message
     pub fn sign(
         &self,
         message: &str)

@@ -26,6 +26,19 @@ fn verify_hs256() {
 }
 
 #[test]
+fn verify_hs256_signature_only() {
+    let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
+    let header = json!({ "alg": "HS256" });
+    let claims = json!({ "aud": "test" });
+    let token_str = jwt::encode(&header, &claims, &alg).unwrap();
+
+    let TokenSlices { message, signature, header, ..} = raw::split_token(&token_str).unwrap();
+    let header = raw::decode_json_token_slice(header).unwrap();
+
+    assert_ok!(raw::verify_signature_only(&header, message, signature, &alg));
+}
+
+#[test]
 #[should_panic(expected = "InvalidSignature")]
 fn hmac_256_bad_secret() {
     let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();

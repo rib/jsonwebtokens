@@ -123,11 +123,41 @@ pub fn decode_json_token_slice(encoded_slice: impl AsRef<str>) -> Result<serde_j
     Ok(value)
 }
 
+/// Decodes just the header of a token
+///
+/// This just adds a little convenience over doing:
+/// ```rust
+/// # use jsonwebtokens as jwt;
+/// # use jwt::raw::{self, TokenSlices, decode_json_token_slice};
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiQGIuY29tIiwiY29tcGFueSI6IkFDTUUiLCJleHAiOjI1MzI1MjQ4OTF9.9r56oF7ZliOBlOAyiOFperTGxBtPykRQiWNFxhDCW98";
+/// let TokenSlices {header, .. } = raw::split_token(token)?;
+/// let header = raw::decode_json_token_slice(header)?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn decode_header_only(token: impl AsRef<str>) -> Result<serde_json::value::Value, Error> {
     let TokenSlices { header, .. } = split_token(token.as_ref())?;
     decode_json_token_slice(header)
 }
 
+/// Decodes the header and claims of a token without any verification checks
+///
+/// This decodes the header and claims of a token without verifying the token's
+/// signature and without verifying any of the claims.
+///
+/// This just adds a little convenience over doing:
+/// ```rust
+/// # use jsonwebtokens as jwt;
+/// # use jwt::raw::{self, TokenSlices, decode_json_token_slice};
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiQGIuY29tIiwiY29tcGFueSI6IkFDTUUiLCJleHAiOjI1MzI1MjQ4OTF9.9r56oF7ZliOBlOAyiOFperTGxBtPykRQiWNFxhDCW98";
+/// let TokenSlices {header, claims, .. } = raw::split_token(token)?;
+/// let header = raw::decode_json_token_slice(header)?;
+/// let claims = raw::decode_json_token_slice(claims)?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn decode_only(token: impl AsRef<str>) -> Result<TokenData, Error> {
     let TokenSlices { header, claims, .. } = split_token(token.as_ref())?;
     let header = decode_json_token_slice(header)?;
@@ -135,6 +165,22 @@ pub fn decode_only(token: impl AsRef<str>) -> Result<TokenData, Error> {
     Ok(TokenData { header: header, claims: claims, _extensible: () })
 }
 
+/// Just verifies the signature of a token's message
+///
+/// For example:
+/// ```rust
+/// # use jsonwebtokens as jwt;
+/// # use jwt::raw::{self, TokenSlices, decode_json_token_slice};
+/// # use jwt::{AlgorithmID, Algorithm};
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiQGIuY29tIiwiY29tcGFueSI6IkFDTUUiLCJleHAiOjI1MzI1MjQ4OTF9.9r56oF7ZliOBlOAyiOFperTGxBtPykRQiWNFxhDCW98";
+/// let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
+/// let TokenSlices {message, signature, header, .. } = raw::split_token(token)?;
+/// let header = raw::decode_json_token_slice(header)?;
+/// raw::verify_signature_only(&header, message, signature, &alg)?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn verify_signature_only(
         header: &serde_json::value::Value,
         message: impl AsRef<str>,
