@@ -98,10 +98,10 @@ let claims: Value = verifier.verify(&token_str, &alg)?;
 ```rust
 let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret")?;
 let verifier = Verifier::create()
-    .claim_equals("my_claim0", "value")
-    .claim_matches("my_claim1", "value[0-9]")
-    .claim_equals_one_of("my_claim2", &["value0", "value1"])
-    .claim_matches_one_of("my_claim3", &[regex0, regex1])
+    .string_equals("my_claim0", "value")
+    .string_matches("my_claim1", "value[0-9]")
+    .string_equals_one_of("my_claim2", &["value0", "value1"])
+    .string_matches_one_of("my_claim3", &[regex0, regex1])
     .build()?;
 let claims: Value = verifier.verify(&token_str, &alg)?;
 ```
@@ -120,10 +120,9 @@ let claims: Value = verifier.verify(&token_str, &alg)?;
 
 # Low-level Usage
 
-In case you have more particular decoding and/or validation requirements than are
-currently handled with the above, high-level APIs, enough of the lower-level
-implementation details are exposed to allow you to manually split, decode and
-verify a JWT token.
+In case you need even more fine-grained control than is possible with the
+above APIs, many of the lower-level details are exposed through the `::raw`
+module to allow you to manually split, decode and verify a JWT token.
 
 
 ## Just split a token into component parts
