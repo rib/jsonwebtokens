@@ -258,8 +258,8 @@ impl VerifierBuilder {
     }
 
     /// Convenience for claim_equals("aud", "value")
-    pub fn audience(&mut self, issuer: impl Into<String>) -> &mut Self {
-        self.claim_equals("aud", issuer)
+    pub fn audience(&mut self, aud: impl Into<String>) -> &mut Self {
+        self.claim_equals("aud", aud)
     }
 
     /// Convenience for claim_equals("sub", "value")
