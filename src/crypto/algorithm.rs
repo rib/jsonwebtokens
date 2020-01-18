@@ -29,7 +29,9 @@ impl From<AlgorithmID> for &dyn signature::VerificationAlgorithm {
 }
 
 
+/// Uniquely identifies a specific cryptographic algorithm for signing or verifying tokens
 #[derive(Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum AlgorithmID {
     /// Unsecured JWT
     NONE,
@@ -59,9 +61,6 @@ pub enum AlgorithmID {
     PS384,
     /// RSASSA-PSS using SHA-512
     PS512,
-
-    #[doc(hidden)]
-    __Nonexhaustive
 }
 
 impl Default for AlgorithmID {
@@ -89,8 +88,6 @@ impl From<AlgorithmID> for &'static str {
             AlgorithmID::PS256 => "PS256",
             AlgorithmID::PS384 => "PS384",
             AlgorithmID::PS512 => "PS512",
-
-            __nonexhaustive => "Unknown"
         }
     }
 }
@@ -195,6 +192,19 @@ fn ensure_rsa_id(id: AlgorithmID) -> Result<(), Error>
     }
 }
 
+/// A cryptographic function for signing or verifying a token signature
+///
+/// An Algorithm encapsulates one function for signing or verifying tokens. A key
+/// or secret only needs to be decoded once so it can be reused cheaply while
+/// signing or verifying tokens. The decoded key or secret and `AlgorithmID` are
+/// immutable after construction to avoid the chance of being coerced into using
+/// the wrong algorithm to sign or verify a token at runtime.
+///
+/// Optionally a `kid` Key ID can be assigned to an `Algorithm` to add a strict
+/// check that a token's header must include the same `kid` value. This is useful
+/// when using an `Algorithm` to represent a single key within a JWKS key set,
+/// for example.
+///
 #[derive(Debug)]
 pub struct Algorithm
 {
@@ -202,9 +212,6 @@ pub struct Algorithm
     kid: Option<String>,
 
     secret_or_key: SecretOrKey,
-
-    #[doc(hidden)]
-    _extensible: (),
 }
 
 impl Algorithm
@@ -239,7 +246,6 @@ impl Algorithm
             id: AlgorithmID::NONE,
             kid: None,
             secret_or_key: SecretOrKey::None,
-            _extensible: ()
         })
     }
 
@@ -253,7 +259,6 @@ impl Algorithm
             id: id,
             kid: None,
             secret_or_key: SecretOrKey::Secret(secret.into()),
-            _extensible: ()
         })
     }
 
@@ -269,7 +274,6 @@ impl Algorithm
             id: id,
             kid: None,
             secret_or_key: SecretOrKey::Secret(b64_decode(secret.as_ref())?),
-            _extensible: ()
         })
     }
 
@@ -288,7 +292,6 @@ impl Algorithm
             id: id,
             kid: None,
             secret_or_key: SecretOrKey::EcdsaKeyPair(signing_key),
-            _extensible: ()
         })
     }
 
@@ -305,7 +308,6 @@ impl Algorithm
             id: id,
             kid: None,
             secret_or_key: SecretOrKey::EcdsaUnparsedKey(ec_pub_key.to_vec()),
-            _extensible: ()
         })
     }
 
@@ -323,7 +325,6 @@ impl Algorithm
             id: id,
             kid: None,
             secret_or_key: SecretOrKey::RsaKeyPair(key_pair),
-            _extensible: ()
         })
     }
 
@@ -340,7 +341,6 @@ impl Algorithm
             id: id,
             kid: None,
             secret_or_key: SecretOrKey::RsaUnparsedKey(rsa_pub_key.to_vec()),
-            _extensible: ()
         })
     }
 
@@ -360,7 +360,6 @@ impl Algorithm
             id: id,
             kid: None,
             secret_or_key: SecretOrKey::RsaParameters(n, e),
-            _extensible: ()
         })
     }
 
@@ -403,7 +402,6 @@ impl Algorithm
             | AlgorithmID::PS512 => {
                 rsa::verify(self.id, &self.secret_or_key, message.as_ref(), signature.as_ref())
             }
-            AlgorithmID::__Nonexhaustive => unreachable!("unhandled algorithm"),
         }
     }
 
@@ -430,7 +428,6 @@ impl Algorithm
             | AlgorithmID::PS512 => {
                 rsa::sign(self.id, &self.secret_or_key, message)
             }
-            AlgorithmID::__Nonexhaustive => unreachable!("unhandled algorithm"),
         }
     }
 }

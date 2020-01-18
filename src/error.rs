@@ -2,12 +2,10 @@ use std::error::Error as StdError;
 use std::fmt;
 
 #[derive(Debug)]
+#[non_exhaustive]
 pub struct ErrorDetails {
     desc: String,
     src: Option<Box<dyn StdError + Send>>,
-
-    #[doc(hidden)]
-    _extensible: (),
 }
 
 impl ErrorDetails {
@@ -15,7 +13,6 @@ impl ErrorDetails {
         ErrorDetails {
             desc: desc.into(),
             src: None,
-            _extensible: ()
         }
     }
 
@@ -23,7 +20,6 @@ impl ErrorDetails {
         ErrorDetails {
             desc: desc.into(),
             src: Some(Box::new(src)),
-            _extensible: ()
         }
     }
 }
@@ -33,12 +29,12 @@ impl From<String> for ErrorDetails {
         ErrorDetails {
             desc: s,
             src: None,
-            _extensible: ()
         }
     }
 }
 
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum Error {
 
     /// Any of: invalid key data, malformed data for encoding, base864/utf8 decode/encode errors
@@ -55,9 +51,6 @@ pub enum Error {
 
     /// Any of: header.payload.signature split error, json parser error, header or claim validation error
     MalformedToken(ErrorDetails),
-
-    #[doc(hidden)]
-    __Nonexhaustive
 }
 
 
@@ -83,7 +76,6 @@ impl std::fmt::Display for Error {
             Error::InvalidSignature() => write!(f, "JWT Signature Invalid"),
             Error::TokenExpiredAt(when) => write!(f, "JWT token expired at {}", when),
             Error::MalformedToken(details) => write!(f, "JWT claims invalid: {}", details.desc),
-            Error::__Nonexhaustive => write!(f, "Unknown error"),
         }
     }
 }

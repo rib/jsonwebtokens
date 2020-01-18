@@ -59,11 +59,9 @@ enum VerifierKind {
     Pattern(Pattern),
     #[cfg(feature = "matching")]
     PatternSet(HashSet<Pattern>),
-
-    #[doc(hidden)]
-    __Nonexhaustive
 }
 
+/// Immutable requirements for checking token claims
 #[derive(Debug, Clone)]
 pub struct Verifier {
     leeway: u32,
@@ -72,9 +70,6 @@ pub struct Verifier {
     ignore_iat: bool,
 
     claim_verifiers: HashMap<String, VerifierKind>,
-
-    #[doc(hidden)]
-    _extensible: (),
 }
 
 impl Verifier {
@@ -194,7 +189,6 @@ impl Verifier {
                                                                                         claim_key, claim_string))));
                             }
                         }
-                        VerifierKind::__Nonexhaustive => unreachable!("Unhandled claim verifier kind")
                     }
                 }
                 _ => {
@@ -243,6 +237,8 @@ impl Verifier {
     }
 }
 
+
+/// Configures the requirements for checking token claims with a builder-pattern API
 pub struct VerifierBuilder {
     leeway: u32,
     ignore_exp: bool,
@@ -250,9 +246,6 @@ pub struct VerifierBuilder {
     ignore_iat: bool,
 
     claim_verifiers: HashMap<String, VerifierKind>,
-
-    #[doc(hidden)]
-    _extensible: (),
 }
 
 impl VerifierBuilder {
@@ -264,7 +257,6 @@ impl VerifierBuilder {
             ignore_nbf: false,
             ignore_iat: false,
             claim_verifiers: HashMap::new(),
-            _extensible: ()
         }
     }
 
@@ -357,7 +349,6 @@ impl VerifierBuilder {
             ignore_nbf: self.ignore_nbf,
             ignore_iat: self.ignore_iat,
             claim_verifiers: self.claim_verifiers.clone(),
-            _extensible: ()
         })
     }
 }
