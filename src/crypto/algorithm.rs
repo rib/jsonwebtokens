@@ -215,7 +215,7 @@ impl Algorithm
         self.id
     }
 
-    /// Returns the algorithm name as standardized in [RFC 7519](https://tools.ietf.org/html/rfc7519)
+    /// Returns the algorithm name as standardized in [RFC 7518](https://tools.ietf.org/html/rfc7518)
     pub fn name(&self) -> &'static str {
         self.id.into()
     }
