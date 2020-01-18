@@ -57,7 +57,7 @@ impl PemEncodedKey {
                 let pem_contents = content.contents;
                 let asn1_content = match simple_asn1::from_der(pem_contents.as_slice()) {
                     Ok(asn1) => asn1,
-                    Err(e) => return Err(Error::InvalidInput(ErrorDetails::map("Failed to parse PEM file", e))),
+                    Err(e) => return Err(Error::InvalidInput(ErrorDetails::map("Failed to parse PEM file", Box::new(e)))),
                 };
 
                 match content.tag.as_ref() {
@@ -121,7 +121,7 @@ impl PemEncodedKey {
                     _ => Err(Error::InvalidInput(ErrorDetails::new("Failed to recognize PKCS#1 or SEC1 or PKCS#8 markers in PEM file"))),
                 }
             }
-            Err(e) => Err(Error::InvalidInput(ErrorDetails::map("Failed to parse PEM file", e))),
+            Err(e) => Err(Error::InvalidInput(ErrorDetails::map("Failed to parse PEM file", Box::new(e)))),
         }
     }
 

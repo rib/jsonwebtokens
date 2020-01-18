@@ -137,6 +137,31 @@ fn string_equals_wrong_type() {
 }
 
 #[test]
+fn closure_verify_u64_claim() {
+    let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
+    let header = json!({ "alg": "HS256" });
+    let claims = json!({ "my_claim": 1234 });
+    let token_str = jwt::encode(&header, &claims, &alg).unwrap();
+    let verifier = Verifier::create()
+        .claim_callback("my_claim", |v| v.is_u64() && v.as_u64().unwrap() == 1234)
+        .build().unwrap();
+    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+}
+
+#[test]
+#[should_panic(expected = "MalformedToken")]
+fn closure_fail_verify_u64_claim() {
+    let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
+    let header = json!({ "alg": "HS256" });
+    let claims = json!({ "my_claim": "1234" });
+    let token_str = jwt::encode(&header, &claims, &alg).unwrap();
+    let verifier = Verifier::create()
+        .claim_callback("my_claim", |v| v.is_u64() && v.as_u64().unwrap() == 1234)
+        .build().unwrap();
+    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+}
+
+#[test]
 #[should_panic(expected = "MalformedToken")]
 fn non_integer_iat() {
     let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();

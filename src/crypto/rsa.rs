@@ -41,7 +41,7 @@ pub fn sign(algorithm: AlgorithmID, secret_or_key: &SecretOrKey, message: &str) 
             let rng = rand::SystemRandom::new();
             key_pair
                 .sign(ring_alg, &rng, message.as_bytes(), &mut signature)
-                .map_err(|e| Error::InvalidInput(ErrorDetails::map("Failed to sign JWT with RSA", e)))?;
+                .map_err(|e| Error::InvalidInput(ErrorDetails::map("Failed to sign JWT with RSA", Box::new(e))))?;
 
             Ok(b64_encode(&signature))
         },

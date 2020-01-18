@@ -280,7 +280,7 @@ impl Algorithm
         let ring_alg = id.into();
         let pem_key = PemEncodedKey::new(key)?;
         let signing_key = signature::EcdsaKeyPair::from_pkcs8(ring_alg, pem_key.as_ec_private_key()?)
-            .map_err(|e| Error::InvalidInput(ErrorDetails::map("Failed to create ECDSA key pair for signing", e)))?;
+            .map_err(|e| Error::InvalidInput(ErrorDetails::map("Failed to create ECDSA key pair for signing", Box::new(e))))?;
 
         Ok(Algorithm {
             id: id,
@@ -313,7 +313,7 @@ impl Algorithm
 
         let pem_key = PemEncodedKey::new(key)?;
         let key_pair = signature::RsaKeyPair::from_der(pem_key.as_rsa_private_key()?)
-            .map_err(|e| Error::InvalidInput(ErrorDetails::map("Failed to create RSA key for signing", e)))?;
+            .map_err(|e| Error::InvalidInput(ErrorDetails::map("Failed to create RSA key for signing", Box::new(e))))?;
 
         Ok(Algorithm {
             id: id,

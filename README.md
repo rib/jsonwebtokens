@@ -102,6 +102,7 @@ let verifier = Verifier::create()
     .string_matches("my_claim1", "value[0-9]")
     .string_equals_one_of("my_claim2", &["value0", "value1"])
     .string_matches_one_of("my_claim3", &[regex0, regex1])
+    .claim_callback("my_claim4", |v| v.is_u64() && v.as_u64().unwrap() == 1234)
     .build()?;
 let claims: Value = verifier.verify(&token_str, &alg)?;
 ```

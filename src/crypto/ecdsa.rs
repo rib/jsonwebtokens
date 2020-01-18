@@ -22,7 +22,7 @@ pub fn sign(_algorithm: AlgorithmID, secret_or_key: &SecretOrKey, message: &str)
         SecretOrKey::EcdsaKeyPair(signing_key) => {
             let rng = rand::SystemRandom::new();
             let out = signing_key.sign(&rng, message.as_bytes())
-                .map_err(|e| Error::InvalidInput(ErrorDetails::map("Failed to sign JWT with ECDSA", e)))?;
+                .map_err(|e| Error::InvalidInput(ErrorDetails::map("Failed to sign JWT with ECDSA", Box::new(e))))?;
             Ok(b64_encode(out.as_ref()))
         },
         _ => Err(Error::InvalidInput(ErrorDetails::new("Missing ECDSA private key for signing")))

@@ -16,10 +16,10 @@ impl ErrorDetails {
         }
     }
 
-    pub fn map<T: 'static + StdError + Send>(desc: impl Into<String>, src: T) -> ErrorDetails {
+    pub fn map(desc: impl Into<String>, src: Box<dyn StdError + Send + 'static>) -> ErrorDetails {
         ErrorDetails {
             desc: desc.into(),
-            src: Some(Box::new(src)),
+            src: Some(src),
         }
     }
 }

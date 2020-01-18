@@ -1,6 +1,7 @@
 use std::time::SystemTime;
 use std::collections::{ HashSet, HashMap };
 use serde_json::value::Value;
+use std::sync::Arc;
 
 #[cfg(feature = "matching")]
 use std::fmt;
@@ -50,19 +51,32 @@ impl Hash for Pattern {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone)]
+struct VerifierClosure {
+    func: Arc<dyn Fn(&serde_json::value::Value) -> bool>,
+}
+impl Eq for VerifierClosure {}
+impl PartialEq for VerifierClosure {
+    fn eq(&self, other: &Self) -> bool {
+        return Arc::ptr_eq(&self.func, &other.func);
+    }
+}
+
+#[derive(Clone, PartialEq, Eq)]
 enum VerifierKind {
-    Constant(String),
-    Set(HashSet<String>),
+    Closure(VerifierClosure),
+
+    StringConstant(String),
+    StringSet(HashSet<String>),
 
     #[cfg(feature = "matching")]
-    Pattern(Pattern),
+    StringPattern(Pattern),
     #[cfg(feature = "matching")]
-    PatternSet(HashSet<Pattern>),
+    StringPatternSet(HashSet<Pattern>),
 }
 
 /// Immutable requirements for checking token claims
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Verifier {
     leeway: u32,
     ignore_exp: bool,
@@ -157,43 +171,62 @@ impl Verifier {
 
         for (claim_key, claim_verifier) in verifiers.iter() {
             match claims.get(claim_key) {
-                Some(Value::String(claim_string)) => {
-                    match claim_verifier {
-                        VerifierKind::Constant(constant) => {
-                            if claim_string != constant {
-                                return Err(Error::MalformedToken(ErrorDetails::new(format!("{}: {} != {}", claim_key, claim_string, constant))));
-                            }
-                        },
-                        VerifierKind::Set(constant_set) => {
-                            if !constant_set.contains(claim_string) {
-                                return Err(Error::MalformedToken(ErrorDetails::new(format!("{}: {} not in set", claim_key, claim_string))));
-                            }
-                        },
-                        #[cfg(feature = "matching")]
-                        VerifierKind::Pattern(pattern) => {
-                            if !pattern.is_match(claim_string) {
-                                return Err(Error::MalformedToken(ErrorDetails::new(format!("{}: {} doesn't match regex {}", claim_key, claim_string, pattern))));
-                            }
-                        },
-                        #[cfg(feature = "matching")]
-                        VerifierKind::PatternSet(pattern_set) => {
-                            let mut found_match = false;
-                            for p in pattern_set {
-                                if p.is_match(claim_string) {
-                                    found_match = true;
-                                    break;
+                Some(claim_value) => {
+                    if let VerifierKind::Closure(closure_container) = claim_verifier {
+                        let closure = closure_container.func.as_ref();
+                        if !closure(claim_value) {
+                            return Err(Error::MalformedToken(ErrorDetails::new(format!("Claim {}: verifier callback returned false for '{}'",
+                                                                                       claim_key, claim_value))));
+                        }
+                    } else if let Value::String(claim_string) = claim_value {
+                        match claim_verifier {
+                            VerifierKind::StringConstant(constant) => {
+                                if claim_string != constant {
+                                    return Err(Error::MalformedToken(ErrorDetails::new(format!("Claim {}: {} != {}",
+                                                                                                claim_key, claim_string, constant))));
                                 }
-                            }
-                            if !found_match {
-                                return Err(Error::MalformedToken(ErrorDetails::new(format!("{}: {} doesn't match regex set",
-                                                                                        claim_key, claim_string))));
+                            },
+                            VerifierKind::StringSet(constant_set) => {
+                                if !constant_set.contains(claim_string) {
+                                    return Err(Error::MalformedToken(ErrorDetails::new(format!("Claim {}: {} not in set",
+                                                                                               claim_key, claim_string))));
+                                }
+                            },
+                            #[cfg(feature = "matching")]
+                            VerifierKind::StringPattern(pattern) => {
+                                if !pattern.is_match(claim_string) {
+                                    return Err(Error::MalformedToken(ErrorDetails::new(format!("Claim {}: {} doesn't match regex {}",
+                                                                                               claim_key, claim_string, pattern))));
+                                }
+                            },
+                            #[cfg(feature = "matching")]
+                            VerifierKind::StringPatternSet(pattern_set) => {
+                                let mut found_match = false;
+                                for p in pattern_set {
+                                    if p.is_match(claim_string) {
+                                        found_match = true;
+                                        break;
+                                    }
+                                }
+                                if !found_match {
+                                    return Err(Error::MalformedToken(ErrorDetails::new(format!("Claim {}: {} doesn't match regex set",
+                                                                                               claim_key, claim_string))));
+                                }
+                            },
+                            _ => {
+                                return Err(Error::MalformedToken(ErrorDetails::new(format!("Claim {}: has unexpected type (String)", claim_key))));
                             }
                         }
+                    } else if let Value::Number(_claim_number) = claim_value{
+                        // TODO: support verifying numeric claims
+                        return Err(Error::MalformedToken(ErrorDetails::new(format!("Claim {}: has unexpected type (Number)", claim_key))));
+                    } else {
+                        return Err(Error::MalformedToken(ErrorDetails::new(format!("Claim {}: has unexpected type", claim_key))));
                     }
-                }
+                },
                 _ => {
                     // If we have a verifier for particular claim then that claim is required
-                    return Err(Error::MalformedToken(ErrorDetails::new(format!("{}: missing, or not a string", claim_key))));
+                    return Err(Error::MalformedToken(ErrorDetails::new(format!("Claim {}: missing", claim_key))));
                 }
             }
         }
@@ -282,7 +315,7 @@ impl VerifierBuilder {
 
     /// Check that a claim has a specific string value
     pub fn string_equals(&mut self, claim: impl Into<String>, value: impl Into<String>) -> &mut Self {
-        self.claim_verifiers.insert(claim.into(), VerifierKind::Constant(value.into()));
+        self.claim_verifiers.insert(claim.into(), VerifierKind::StringConstant(value.into()));
         self
     }
 
@@ -290,14 +323,14 @@ impl VerifierBuilder {
     pub fn string_equals_one_of(&mut self, claim: impl Into<String>, values: &[&str]) -> &mut Self
     {
         let hash_set: HashSet<String> = values.into_iter().cloned().map(|s| s.to_owned()).collect();
-        self.claim_verifiers.insert(claim.into(), VerifierKind::Set(hash_set));
+        self.claim_verifiers.insert(claim.into(), VerifierKind::StringSet(hash_set));
         self
     }
 
     /// Check that the claim matches the given regular expression
     #[cfg(feature = "matching")]
     pub fn string_matches(&mut self, claim: impl Into<String>, value: impl Into<Regex>) -> &mut Self {
-        self.claim_verifiers.insert(claim.into(), VerifierKind::Pattern(Pattern(value.into())));
+        self.claim_verifiers.insert(claim.into(), VerifierKind::StringPattern(Pattern(value.into())));
         self
     }
 
@@ -338,6 +371,14 @@ impl VerifierBuilder {
     /// Don't check the 'iat' issued at claim
     pub fn ignore_iat(&mut self) -> &mut Self {
         self.ignore_iat = true;
+        self
+    }
+
+    /// Check a claim `Value` manually, returning `true` if ok, else `false`
+    pub fn claim_callback(&mut self, claim: impl Into<String>, func: impl Fn(&serde_json::value::Value) -> bool + 'static) -> &mut Self
+    {
+        let closure_verifier = VerifierClosure { func: Arc::new(func) };
+        self.claim_verifiers.insert(claim.into(), VerifierKind::Closure(closure_verifier));
         self
     }
 
