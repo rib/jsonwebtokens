@@ -63,12 +63,6 @@ pub enum AlgorithmID {
     PS512,
 }
 
-impl Default for AlgorithmID {
-    fn default() -> Self {
-        AlgorithmID::HS256
-    }
-}
-
 impl From<AlgorithmID> for &'static str {
     fn from(id: AlgorithmID) -> Self {
         match id {
