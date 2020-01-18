@@ -20,7 +20,7 @@ use crate::crypto::algorithm::{Algorithm};
 // Regex doesn't implement PartialEq, Eq or Hash so we nee a wrapper...
 #[cfg(feature = "matching")]
 #[derive(Debug, Clone)]
-pub struct Pattern(Regex);
+struct Pattern(Regex);
 
 #[cfg(feature = "matching")]
 impl Deref for Pattern {
