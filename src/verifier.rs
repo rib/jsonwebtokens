@@ -346,7 +346,7 @@ impl VerifierBuilder {
             .cloned()
             .map(|r| Pattern(r))
             .collect();
-        self.claim_verifiers.insert(claim.into(), VerifierKind::PatternSet(hash_set));
+        self.claim_verifiers.insert(claim.into(), VerifierKind::StringPatternSet(hash_set));
         self
     }
 

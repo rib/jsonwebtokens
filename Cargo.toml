@@ -1,6 +1,6 @@
 [package]
 name = "jsonwebtokens"
-version = "1.0.0-alpha.11"
+version = "1.0.0-alpha.12"
 authors = ["Robert Bragg <robert@sixbynine.org>"]
 license = "MIT"
 description = "A Json Web Token implementation for Rust"
@@ -12,6 +12,7 @@ keywords = ["jwt", "json", "web", "token", "api"]
 edition = "2018"
 
 [features]
+default = [ "matching" ]
 matching = [ "regex" ]
 
 [dependencies]
