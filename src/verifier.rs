@@ -1,22 +1,21 @@
-use std::time::SystemTime;
-use std::collections::{ HashSet, HashMap };
 use serde_json::value::Value;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
+use std::time::SystemTime;
 
+#[cfg(feature = "matching")]
+use regex::Regex;
 #[cfg(feature = "matching")]
 use std::fmt;
 #[cfg(feature = "matching")]
+use std::hash::{Hash, Hasher};
+#[cfg(feature = "matching")]
 use std::ops::Deref;
-#[cfg(feature = "matching")]
-use std::hash::{ Hash, Hasher };
-#[cfg(feature = "matching")]
-use regex::Regex;
 
+use crate::crypto::algorithm::Algorithm;
 use crate::error::{Error, ErrorDetails};
-use crate::TokenData;
 use crate::raw::*;
-use crate::crypto::algorithm::{Algorithm};
-
+use crate::TokenData;
 
 // Regex doesn't implement PartialEq, Eq or Hash so we nee a wrapper...
 #[cfg(feature = "matching")]
@@ -53,7 +52,7 @@ impl Hash for Pattern {
 
 #[derive(Clone)]
 struct VerifierClosure {
-    func: Arc<dyn Fn(&serde_json::value::Value) -> bool>,
+    func: Arc<dyn Send + Sync + Fn(&serde_json::value::Value) -> bool>,
 }
 impl Eq for VerifierClosure {}
 impl PartialEq for VerifierClosure {
@@ -87,57 +86,75 @@ pub struct Verifier {
 }
 
 impl Verifier {
-
     /// Start constructing a Verifier and configuring what claims should be verified.
     pub fn create() -> VerifierBuilder {
         VerifierBuilder::new()
     }
 
     /// Verifies a token's claims but does not look at any header or verify any signature
-    pub fn verify_claims_only(&self, claims: &serde_json::value::Value, time_now: u64) -> Result<(), Error> {
-
+    pub fn verify_claims_only(
+        &self,
+        claims: &serde_json::value::Value,
+        time_now: u64,
+    ) -> Result<(), Error> {
         let claims = match claims {
             serde_json::value::Value::Object(map) => map,
-            _ => return Err(Error::MalformedToken(ErrorDetails::new("Expected claims to be a JSON object")))
+            _ => {
+                return Err(Error::MalformedToken(ErrorDetails::new(
+                    "Expected claims to be a JSON object",
+                )))
+            }
         };
 
-        if ! self.ignore_iat {
+        if !self.ignore_iat {
             match claims.get("iat") {
                 Some(serde_json::value::Value::Number(number)) => {
                     if let Some(iat) = number.as_u64() {
                         if iat > time_now + (self.leeway as u64) {
-                            return Err(Error::MalformedToken(ErrorDetails::new("Issued with a future 'iat' time")));
+                            return Err(Error::MalformedToken(ErrorDetails::new(
+                                "Issued with a future 'iat' time",
+                            )));
                         }
                     } else {
-                        return Err(Error::MalformedToken(ErrorDetails::new("Failed to parse 'iat' as an integer")));
+                        return Err(Error::MalformedToken(ErrorDetails::new(
+                            "Failed to parse 'iat' as an integer",
+                        )));
                     }
                 }
                 Some(_) => {
-                    return Err(Error::MalformedToken(ErrorDetails::new("Given 'iat' not a number")));
+                    return Err(Error::MalformedToken(ErrorDetails::new(
+                        "Given 'iat' not a number",
+                    )));
                 }
                 None => {}
             }
         }
 
-        if ! self.ignore_nbf {
+        if !self.ignore_nbf {
             match claims.get("nbf") {
                 Some(serde_json::value::Value::Number(number)) => {
                     if let Some(nbf) = number.as_u64() {
                         if nbf > time_now + (self.leeway as u64) {
-                            return Err(Error::MalformedToken(ErrorDetails::new("Time is before 'nbf'")));
+                            return Err(Error::MalformedToken(ErrorDetails::new(
+                                "Time is before 'nbf'",
+                            )));
                         }
                     } else {
-                        return Err(Error::MalformedToken(ErrorDetails::new("Failed to parse 'nbf' as an integer")));
+                        return Err(Error::MalformedToken(ErrorDetails::new(
+                            "Failed to parse 'nbf' as an integer",
+                        )));
                     }
                 }
                 Some(_) => {
-                    return Err(Error::MalformedToken(ErrorDetails::new("Given 'nbf' not a number")));
+                    return Err(Error::MalformedToken(ErrorDetails::new(
+                        "Given 'nbf' not a number",
+                    )));
                 }
                 None => {}
             }
         }
 
-        if ! self.ignore_exp {
+        if !self.ignore_exp {
             match claims.get("exp") {
                 Some(serde_json::value::Value::Number(number)) => {
                     if let Some(exp) = number.as_u64() {
@@ -145,11 +162,15 @@ impl Verifier {
                             return Err(Error::TokenExpiredAt(exp));
                         }
                     } else {
-                        return Err(Error::MalformedToken(ErrorDetails::new("Failed to parse 'exp' as an integer")));
+                        return Err(Error::MalformedToken(ErrorDetails::new(
+                            "Failed to parse 'exp' as an integer",
+                        )));
                     }
                 }
                 Some(_) => {
-                    return Err(Error::MalformedToken(ErrorDetails::new("Given 'exp' not a number")));
+                    return Err(Error::MalformedToken(ErrorDetails::new(
+                        "Given 'exp' not a number",
+                    )));
                 }
                 None => {}
             }
@@ -157,11 +178,14 @@ impl Verifier {
 
         // At least verify the type for these standard claims
         // (Values can separately be validated via .claim_verifiers)
-        for &string_claim in &[ "iss", "sub", "aud", "" ] {
+        for &string_claim in &["iss", "sub", "aud", ""] {
             match claims.get(string_claim) {
                 Some(serde_json::value::Value::String(_)) => {}
                 Some(_) => {
-                    return Err(Error::MalformedToken(ErrorDetails::new(format!("Given '{}' not a string", string_claim))));
+                    return Err(Error::MalformedToken(ErrorDetails::new(format!(
+                        "Given '{}' not a string",
+                        string_claim
+                    ))));
                 }
                 None => {}
             }
@@ -175,30 +199,38 @@ impl Verifier {
                     if let VerifierKind::Closure(closure_container) = claim_verifier {
                         let closure = closure_container.func.as_ref();
                         if !closure(claim_value) {
-                            return Err(Error::MalformedToken(ErrorDetails::new(format!("Claim {}: verifier callback returned false for '{}'",
-                                                                                       claim_key, claim_value))));
+                            return Err(Error::MalformedToken(ErrorDetails::new(format!(
+                                "Claim {}: verifier callback returned false for '{}'",
+                                claim_key, claim_value
+                            ))));
                         }
                     } else if let Value::String(claim_string) = claim_value {
                         match claim_verifier {
                             VerifierKind::StringConstant(constant) => {
                                 if claim_string != constant {
-                                    return Err(Error::MalformedToken(ErrorDetails::new(format!("Claim {}: {} != {}",
-                                                                                                claim_key, claim_string, constant))));
+                                    return Err(Error::MalformedToken(ErrorDetails::new(format!(
+                                        "Claim {}: {} != {}",
+                                        claim_key, claim_string, constant
+                                    ))));
                                 }
-                            },
+                            }
                             VerifierKind::StringSet(constant_set) => {
                                 if !constant_set.contains(claim_string) {
-                                    return Err(Error::MalformedToken(ErrorDetails::new(format!("Claim {}: {} not in set",
-                                                                                               claim_key, claim_string))));
+                                    return Err(Error::MalformedToken(ErrorDetails::new(format!(
+                                        "Claim {}: {} not in set",
+                                        claim_key, claim_string
+                                    ))));
                                 }
-                            },
+                            }
                             #[cfg(feature = "matching")]
                             VerifierKind::StringPattern(pattern) => {
                                 if !pattern.is_match(claim_string) {
-                                    return Err(Error::MalformedToken(ErrorDetails::new(format!("Claim {}: {} doesn't match regex {}",
-                                                                                               claim_key, claim_string, pattern))));
+                                    return Err(Error::MalformedToken(ErrorDetails::new(format!(
+                                        "Claim {}: {} doesn't match regex {}",
+                                        claim_key, claim_string, pattern
+                                    ))));
                                 }
-                            },
+                            }
                             #[cfg(feature = "matching")]
                             VerifierKind::StringPatternSet(pattern_set) => {
                                 let mut found_match = false;
@@ -209,24 +241,38 @@ impl Verifier {
                                     }
                                 }
                                 if !found_match {
-                                    return Err(Error::MalformedToken(ErrorDetails::new(format!("Claim {}: {} doesn't match regex set",
-                                                                                               claim_key, claim_string))));
+                                    return Err(Error::MalformedToken(ErrorDetails::new(format!(
+                                        "Claim {}: {} doesn't match regex set",
+                                        claim_key, claim_string
+                                    ))));
                                 }
-                            },
+                            }
                             _ => {
-                                return Err(Error::MalformedToken(ErrorDetails::new(format!("Claim {}: has unexpected type (String)", claim_key))));
+                                return Err(Error::MalformedToken(ErrorDetails::new(format!(
+                                    "Claim {}: has unexpected type (String)",
+                                    claim_key
+                                ))));
                             }
                         }
-                    } else if let Value::Number(_claim_number) = claim_value{
+                    } else if let Value::Number(_claim_number) = claim_value {
                         // TODO: support verifying numeric claims
-                        return Err(Error::MalformedToken(ErrorDetails::new(format!("Claim {}: has unexpected type (Number)", claim_key))));
+                        return Err(Error::MalformedToken(ErrorDetails::new(format!(
+                            "Claim {}: has unexpected type (Number)",
+                            claim_key
+                        ))));
                     } else {
-                        return Err(Error::MalformedToken(ErrorDetails::new(format!("Claim {}: has unexpected type", claim_key))));
+                        return Err(Error::MalformedToken(ErrorDetails::new(format!(
+                            "Claim {}: has unexpected type",
+                            claim_key
+                        ))));
                     }
-                },
+                }
                 _ => {
                     // If we have a verifier for particular claim then that claim is required
-                    return Err(Error::MalformedToken(ErrorDetails::new(format!("Claim {}: missing", claim_key))));
+                    return Err(Error::MalformedToken(ErrorDetails::new(format!(
+                        "Claim {}: missing",
+                        claim_key
+                    ))));
                 }
             }
         }
@@ -238,17 +284,25 @@ impl Verifier {
         &self,
         token: impl AsRef<str>,
         algorithm: &Algorithm,
-        time_now: u64
-    ) -> Result<TokenData, Error>
-    {
-        let TokenSlices {message, signature, header, claims } = split_token(token.as_ref())?;
+        time_now: u64,
+    ) -> Result<TokenData, Error> {
+        let TokenSlices {
+            message,
+            signature,
+            header,
+            claims,
+        } = split_token(token.as_ref())?;
 
         let header = decode_json_token_slice(header)?;
         verify_signature_only(&header, message, signature, algorithm)?;
         let claims = decode_json_token_slice(claims)?;
         self.verify_claims_only(&claims, time_now)?;
 
-        Ok(TokenData { header: header, claims: claims, _extensible: () })
+        Ok(TokenData {
+            header: header,
+            claims: claims,
+            _extensible: (),
+        })
     }
 
     /// Verify a token's signature and its claims
@@ -256,20 +310,22 @@ impl Verifier {
         &self,
         token: impl AsRef<str>,
         algorithm: &Algorithm,
-    ) -> Result<serde_json::value::Value, Error>
-    {
+    ) -> Result<serde_json::value::Value, Error> {
         let timestamp = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
             Ok(n) => n.as_secs(),
-            Err(_) => return Err(Error::InvalidInput(ErrorDetails::new("SystemTime before UNIX EPOCH!"))),
+            Err(_) => {
+                return Err(Error::InvalidInput(ErrorDetails::new(
+                    "SystemTime before UNIX EPOCH!",
+                )))
+            }
         };
 
         match self.verify_for_time(token.as_ref(), algorithm, timestamp) {
             Ok(data) => Ok(data.claims),
-            Err(error) => Err(error)
+            Err(error) => Err(error),
         }
     }
 }
-
 
 /// Configures the requirements for checking token claims with a builder-pattern API
 pub struct VerifierBuilder {
@@ -282,7 +338,6 @@ pub struct VerifierBuilder {
 }
 
 impl VerifierBuilder {
-
     pub fn new() -> VerifierBuilder {
         VerifierBuilder {
             leeway: 0,
@@ -314,23 +369,35 @@ impl VerifierBuilder {
     }
 
     /// Check that a claim has a specific string value
-    pub fn string_equals(&mut self, claim: impl Into<String>, value: impl Into<String>) -> &mut Self {
-        self.claim_verifiers.insert(claim.into(), VerifierKind::StringConstant(value.into()));
+    pub fn string_equals(
+        &mut self,
+        claim: impl Into<String>,
+        value: impl Into<String>,
+    ) -> &mut Self {
+        self.claim_verifiers
+            .insert(claim.into(), VerifierKind::StringConstant(value.into()));
         self
     }
 
     /// Check that a claim equals one of the given string values
-    pub fn string_equals_one_of(&mut self, claim: impl Into<String>, values: &[&str]) -> &mut Self
-    {
+    pub fn string_equals_one_of(&mut self, claim: impl Into<String>, values: &[&str]) -> &mut Self {
         let hash_set: HashSet<String> = values.into_iter().cloned().map(|s| s.to_owned()).collect();
-        self.claim_verifiers.insert(claim.into(), VerifierKind::StringSet(hash_set));
+        self.claim_verifiers
+            .insert(claim.into(), VerifierKind::StringSet(hash_set));
         self
     }
 
     /// Check that the claim matches the given regular expression
     #[cfg(feature = "matching")]
-    pub fn string_matches(&mut self, claim: impl Into<String>, value: impl Into<Regex>) -> &mut Self {
-        self.claim_verifiers.insert(claim.into(), VerifierKind::StringPattern(Pattern(value.into())));
+    pub fn string_matches(
+        &mut self,
+        claim: impl Into<String>,
+        value: impl Into<Regex>,
+    ) -> &mut Self {
+        self.claim_verifiers.insert(
+            claim.into(),
+            VerifierKind::StringPattern(Pattern(value.into())),
+        );
         self
     }
 
@@ -339,14 +406,14 @@ impl VerifierBuilder {
 
     /// Check that the claim matches one of the given regular expressions
     #[cfg(feature = "matching")]
-    pub fn string_matches_one_of(&mut self, claim: impl Into<String>, values: &[Regex]) -> &mut Self
-    {
-        let hash_set: HashSet<Pattern> = values
-            .into_iter()
-            .cloned()
-            .map(|r| Pattern(r))
-            .collect();
-        self.claim_verifiers.insert(claim.into(), VerifierKind::StringPatternSet(hash_set));
+    pub fn string_matches_one_of(
+        &mut self,
+        claim: impl Into<String>,
+        values: &[Regex],
+    ) -> &mut Self {
+        let hash_set: HashSet<Pattern> = values.into_iter().cloned().map(|r| Pattern(r)).collect();
+        self.claim_verifiers
+            .insert(claim.into(), VerifierKind::StringPatternSet(hash_set));
         self
     }
 
@@ -375,10 +442,16 @@ impl VerifierBuilder {
     }
 
     /// Check a claim `Value` manually, returning `true` if ok, else `false`
-    pub fn claim_callback(&mut self, claim: impl Into<String>, func: impl Fn(&serde_json::value::Value) -> bool + 'static) -> &mut Self
-    {
-        let closure_verifier = VerifierClosure { func: Arc::new(func) };
-        self.claim_verifiers.insert(claim.into(), VerifierKind::Closure(closure_verifier));
+    pub fn claim_callback(
+        &mut self,
+        claim: impl Into<String>,
+        func: impl Send + Sync + Fn(&serde_json::value::Value) -> bool + 'static,
+    ) -> &mut Self {
+        let closure_verifier = VerifierClosure {
+            func: Arc::new(func),
+        };
+        self.claim_verifiers
+            .insert(claim.into(), VerifierKind::Closure(closure_verifier));
         self
     }
 
