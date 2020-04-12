@@ -52,7 +52,7 @@ impl Hash for Pattern {
 
 #[derive(Clone)]
 struct VerifierClosure {
-    func: Arc<dyn Fn(&serde_json::value::Value) -> bool>,
+    func: Arc<dyn Send + Sync + Fn(&serde_json::value::Value) -> bool>,
 }
 impl Eq for VerifierClosure {}
 impl PartialEq for VerifierClosure {
@@ -445,7 +445,7 @@ impl VerifierBuilder {
     pub fn claim_callback(
         &mut self,
         claim: impl Into<String>,
-        func: impl Fn(&serde_json::value::Value) -> bool + 'static,
+        func: impl Send + Sync + Fn(&serde_json::value::Value) -> bool + 'static,
     ) -> &mut Self {
         let closure_verifier = VerifierClosure {
             func: Arc::new(func),
