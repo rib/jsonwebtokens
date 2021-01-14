@@ -115,6 +115,7 @@ pub fn split_token<'a>(token: &'a str) -> Result<TokenSlices<'a>, Error> {
 /// let claims = raw::decode_json_token_slice(claims)?;
 /// # Ok(())
 /// # }
+/// ```
 pub fn decode_json_token_slice(encoded_slice: impl AsRef<str>) -> Result<serde_json::value::Value, Error> {
     let s = String::from_utf8(b64_decode(encoded_slice.as_ref())?)
         .map_err(|e| Error::InvalidInput(ErrorDetails::map("utf8 decode failure", Box::new(e))))?;
