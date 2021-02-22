@@ -5,7 +5,7 @@ use std::fmt;
 #[non_exhaustive]
 pub struct ErrorDetails {
     desc: String,
-    src: Option<Box<dyn StdError + Send>>,
+    src: Option<Box<dyn StdError + Send + Sync + 'static>>,
 }
 
 impl ErrorDetails {
@@ -16,7 +16,7 @@ impl ErrorDetails {
         }
     }
 
-    pub fn map(desc: impl Into<String>, src: Box<dyn StdError + Send + 'static>) -> ErrorDetails {
+    pub fn map(desc: impl Into<String>, src: Box<dyn StdError + Send + Sync + 'static>) -> ErrorDetails {
         ErrorDetails {
             desc: desc.into(),
             src: Some(src),
