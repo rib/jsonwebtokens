@@ -178,7 +178,7 @@ impl Verifier {
 
         // At least verify the type for these standard claims
         // (Values can separately be validated via .claim_verifiers)
-        for &string_claim in &["iss", "sub", "aud", ""] {
+        for &string_claim in &["iss", "sub", "aud"] {
             match claims.get(string_claim) {
                 Some(serde_json::value::Value::String(_)) => {}
                 Some(_) => {
