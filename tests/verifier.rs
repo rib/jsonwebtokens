@@ -207,12 +207,41 @@ fn non_string_iss() {
 
 #[test]
 #[should_panic(expected = "MalformedToken")]
-fn non_string_aud() {
+fn non_string_or_array_aud() {
     let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
     let header = json!({ "alg": "HS256" });
     let claims = json!({ "aud": 1234 });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
     let verifier = Verifier::create().build().unwrap();
+    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+}
+
+#[test]
+fn string_or_array_aud() {
+    let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
+    let header = json!({ "alg": "HS256" });
+    let claims = json!({ "aud": "ACME" });
+    let token_str = jwt::encode(&header, &claims, &alg).unwrap();
+    let verifier = Verifier::create()
+        .build().unwrap();
+    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+
+    let claims = json!({ "aud": ["ACME", "ACME2"] });
+    let token_str = jwt::encode(&header, &claims, &alg).unwrap();
+    let verifier = Verifier::create()
+        .build().unwrap();
+    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+}
+
+#[test]
+#[should_panic(expected = "MalformedToken")]
+fn non_string_array_aud() {
+    let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
+    let header = json!({ "alg": "HS256" });
+    let claims = json!({ "aud": ["ACME", "ACME2", 123] });
+    let token_str = jwt::encode(&header, &claims, &alg).unwrap();
+    let verifier = Verifier::create()
+        .build().unwrap();
     let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
 }
 
@@ -257,6 +286,18 @@ fn aud_equal() {
     let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
     let header = json!({ "alg": "HS256" });
     let claims = json!({ "aud": "ACME" });
+    let token_str = jwt::encode(&header, &claims, &alg).unwrap();
+    let verifier = Verifier::create()
+        .audience("ACME")
+        .build().unwrap();
+    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+}
+
+#[test]
+fn aud_equal_with_array() {
+    let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
+    let header = json!({ "alg": "HS256" });
+    let claims = json!({ "aud": ["ACME", "ACME2"] });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
     let verifier = Verifier::create()
         .audience("ACME")
@@ -388,4 +429,29 @@ fn matches_one_of_missing() {
               Regex::new("other[0123]").unwrap()])
         .build().unwrap();
     let _claims: Value = verifier.verify(&token, &alg).unwrap();
+}
+
+#[test]
+#[should_panic(expected = "MalformedToken")]
+fn non_string_array_contains() {
+    let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
+    let header = json!({ "alg": "HS256" });
+    let claims = json!({ "my_claim": ["value1", "value2", 123] });
+    let token_str = jwt::encode(&header, &claims, &alg).unwrap();
+    let verifier = Verifier::create()
+        .string_or_array_contains("my_claim", "value1")
+        .build().unwrap();
+    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+}
+
+#[test]
+fn string_array_contains() {
+    let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
+    let header = json!({ "alg": "HS256" });
+    let claims = json!({ "my_claim": ["value1", "value2", "value3"] });
+    let token_str = jwt::encode(&header, &claims, &alg).unwrap();
+    let verifier = Verifier::create()
+        .string_or_array_contains("my_claim", "value2")
+        .build().unwrap();
+    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
 }

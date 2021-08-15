@@ -72,6 +72,8 @@ enum VerifierKind {
     StringPattern(Pattern),
     #[cfg(feature = "matching")]
     StringPatternSet(HashSet<Pattern>),
+
+    StringOrArrayContains(String)
 }
 
 /// Immutable requirements for checking token claims
@@ -178,13 +180,36 @@ impl Verifier {
 
         // At least verify the type for these standard claims
         // (Values can separately be validated via .claim_verifiers)
-        for &string_claim in &["iss", "sub", "aud", ""] {
+        for &string_claim in &["iss", "sub"] {
             match claims.get(string_claim) {
                 Some(serde_json::value::Value::String(_)) => {}
                 Some(_) => {
                     return Err(Error::MalformedToken(ErrorDetails::new(format!(
                         "Given '{}' not a string",
                         string_claim
+                    ))));
+                }
+                None => {}
+            }
+        }
+
+        for &string_or_array in &["aud"] {
+            match claims.get(string_or_array) {
+                Some(serde_json::value::Value::String(_)) => {},
+                Some(serde_json::value::Value::Array(claim_array)) => {
+                    for subclaim in claim_array {
+                        if !subclaim.is_string() {
+                            return Err(Error::MalformedToken(ErrorDetails::new(format!(
+                                "Claim {}: array elements are not all strings",
+                                string_or_array
+                            ))));
+                        }
+                    }
+                },
+                Some(_) => {
+                    return Err(Error::MalformedToken(ErrorDetails::new(format!(
+                        "Given '{}' not a string or an array of strings",
+                        string_or_array
                     ))));
                 }
                 None => {}
@@ -247,9 +272,52 @@ impl Verifier {
                                     ))));
                                 }
                             }
+                            VerifierKind::StringOrArrayContains(contains) => {
+                                 if claim_string != contains {
+                                    return Err(Error::MalformedToken(ErrorDetails::new(format!(
+                                        "Claim {}: {} != {}",
+                                        claim_key, claim_string, contains
+                                    ))));
+                                }
+                            }
                             _ => {
                                 return Err(Error::MalformedToken(ErrorDetails::new(format!(
                                     "Claim {}: has unexpected type (String)",
+                                    claim_key
+                                ))));
+                            }
+                        }
+                    } else if let Value::Array(claim_array) = claim_value {
+                        match claim_verifier {
+                            VerifierKind::StringOrArrayContains(contains) => {
+                                let mut found = false;
+                                for subclaim in claim_array {
+                                    match subclaim {
+                                        Value::String(subclaim_string) => {
+                                            if subclaim_string == contains {
+                                                found = true;
+                                                // XXX: don't break from loop early since we want to
+                                                // check _all_ array elements are strings
+                                            }
+                                        }
+                                        _ => {
+                                            return Err(Error::MalformedToken(ErrorDetails::new(format!(
+                                                "Claim {}: array elements are not all strings",
+                                                claim_key
+                                            ))));
+                                        }
+                                    }
+                                }
+                                if !found {
+                                    return Err(Error::MalformedToken(ErrorDetails::new(format!(
+                                        "Claim {}: array did not contain '{}'",
+                                        claim_key, contains
+                                    ))));
+                                }
+                            },
+                            _ => {
+                                return Err(Error::MalformedToken(ErrorDetails::new(format!(
+                                    "Claim {}: has unexpected type (Array)",
                                     claim_key
                                 ))));
                             }
@@ -353,9 +421,9 @@ impl VerifierBuilder {
         self.string_equals("iss", issuer)
     }
 
-    /// Convenience for string_equals("aud", "value")
+    /// Convenience for string_or_array_contains("aud", "value")
     pub fn audience(&mut self, aud: impl Into<String>) -> &mut Self {
-        self.string_equals("aud", aud)
+        self.string_or_array_contains("aud", aud)
     }
 
     /// Convenience for string_equals("sub", "value")
@@ -414,6 +482,18 @@ impl VerifierBuilder {
         let hash_set: HashSet<Pattern> = values.into_iter().cloned().map(|r| Pattern(r)).collect();
         self.claim_verifiers
             .insert(claim.into(), VerifierKind::StringPatternSet(hash_set));
+        self
+    }
+
+    pub fn string_or_array_contains(
+        &mut self,
+        claim: impl Into<String>,
+        value: impl Into<String>
+    ) -> &mut Self {
+        self.claim_verifiers.insert(
+            claim.into(),
+            VerifierKind::StringOrArrayContains(value.into())
+        );
         self
     }
 
