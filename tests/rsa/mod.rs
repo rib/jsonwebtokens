@@ -1,3 +1,4 @@
+use serde::{Serialize,Deserialize};
 use serde_json::json;
 use serde_json::value::Value;
 
@@ -14,6 +15,46 @@ const RSA_ALGORITHMS: &[AlgorithmID] = &[
     AlgorithmID::PS384,
     AlgorithmID::PS512,
 ];
+
+#[derive(Serialize, Deserialize)]
+struct UserClaims {
+    test: i32
+}
+
+struct Jwt {
+}
+
+type TestError = Box<dyn std::error::Error + Send + Sync + 'static>;
+const PEM: &[u8] = include_bytes!("./jwtRS256.pem");
+const PEM_PUB: &[u8] = include_bytes!("./jwtRS256.pub");
+impl Jwt {
+
+    pub fn from_claims(claims: UserClaims) -> Result<String, TestError> {
+        let algorithm = Algorithm::new_rsa_pem_signer(AlgorithmID::RS256, PEM)?;
+        let header = json!({
+            "alg": algorithm.name()
+        });
+        let token = jwt::encode(&header, &claims, &algorithm)?;
+        Ok(token)
+    }
+
+    pub fn validate(token: &str) -> Result<UserClaims, TestError> {
+        let algorithm = Algorithm::new_rsa_pem_verifier(AlgorithmID::RS256, PEM_PUB)?;
+        let verifier = Verifier::create().leeway(10).build()?;
+
+        let claims = serde_json::from_value::<UserClaims>(verifier.verify(token, &algorithm)?)?;
+        Ok(claims)
+    }
+}
+
+#[test]
+fn test_issue_15() {
+    let test_claims = UserClaims { test: 100 };
+
+    let token = Jwt::from_claims(test_claims).unwrap();
+    let claims = Jwt::validate(&token).unwrap();
+    assert_eq!(claims.test, 100);
+}
 
 #[test]
 #[should_panic(expected = "AlgorithmMismatch")]
