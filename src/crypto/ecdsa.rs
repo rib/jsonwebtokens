@@ -1,11 +1,9 @@
-
 use ring::{rand, signature};
 
+use crate::crypto::algorithm::AlgorithmID;
+use crate::crypto::SecretOrKey;
 use crate::error::{Error, ErrorDetails};
 use crate::raw::*;
-use crate::crypto::SecretOrKey;
-use crate::crypto::algorithm::AlgorithmID;
-
 
 impl From<AlgorithmID> for &signature::EcdsaSigningAlgorithm {
     fn from(alg: AlgorithmID) -> Self {
@@ -17,27 +15,45 @@ impl From<AlgorithmID> for &signature::EcdsaSigningAlgorithm {
     }
 }
 
-pub fn sign(_algorithm: AlgorithmID, secret_or_key: &SecretOrKey, message: &str) -> Result<String, Error> {
+pub fn sign(
+    _algorithm: AlgorithmID,
+    secret_or_key: &SecretOrKey,
+    message: &str,
+) -> Result<String, Error> {
     match secret_or_key {
         SecretOrKey::EcdsaKeyPair(signing_key) => {
             let rng = rand::SystemRandom::new();
-            let out = signing_key.sign(&rng, message.as_bytes())
-                .map_err(|e| Error::InvalidInput(ErrorDetails::map("Failed to sign JWT with ECDSA", Box::new(e))))?;
+            let out = signing_key.sign(&rng, message.as_bytes()).map_err(|e| {
+                Error::InvalidInput(ErrorDetails::map(
+                    "Failed to sign JWT with ECDSA",
+                    Box::new(e),
+                ))
+            })?;
             Ok(b64_encode(out.as_ref()))
-        },
-        _ => Err(Error::InvalidInput(ErrorDetails::new("Missing ECDSA private key for signing")))
+        }
+        _ => Err(Error::InvalidInput(ErrorDetails::new(
+            "Missing ECDSA private key for signing",
+        ))),
     }
 }
 
-pub fn verify(algorithm: AlgorithmID, secret_or_key: &SecretOrKey, message: &str, signature: &str) -> Result<(), Error> {
+pub fn verify(
+    algorithm: AlgorithmID,
+    secret_or_key: &SecretOrKey,
+    message: &str,
+    signature: &str,
+) -> Result<(), Error> {
     let ring_alg = algorithm.into();
     match secret_or_key {
         SecretOrKey::EcdsaUnparsedKey(key) => {
             let public_key = signature::UnparsedPublicKey::new(ring_alg, key);
             let signature_bytes = b64_decode(signature)?;
-            public_key.verify(message.as_bytes(), &signature_bytes)
+            public_key
+                .verify(message.as_bytes(), &signature_bytes)
                 .map_err(|_| Error::InvalidSignature())
-        },
-        _ => Err(Error::InvalidInput(ErrorDetails::new("Missing ECDSA public key for signing")))
+        }
+        _ => Err(Error::InvalidInput(ErrorDetails::new(
+            "Missing ECDSA public key for signing",
+        ))),
     }
 }

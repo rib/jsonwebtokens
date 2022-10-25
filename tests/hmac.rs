@@ -4,8 +4,8 @@ use serde_json::json;
 use serde_json::value::Value;
 
 use jsonwebtokens as jwt;
-use jwt::{raw, Algorithm, AlgorithmID, Verifier, TokenData};
 use jwt::raw::TokenSlices;
+use jwt::{raw, Algorithm, AlgorithmID, TokenData, Verifier};
 
 mod common;
 use common::get_time;
@@ -32,10 +32,17 @@ fn verify_hs256_signature_only() {
     let claims = json!({ "aud": "test" });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
 
-    let TokenSlices { message, signature, header, ..} = raw::split_token(&token_str).unwrap();
+    let TokenSlices {
+        message,
+        signature,
+        header,
+        ..
+    } = raw::split_token(&token_str).unwrap();
     let header = raw::decode_json_token_slice(header).unwrap();
 
-    assert_ok!(raw::verify_signature_only(&header, message, signature, &alg));
+    assert_ok!(raw::verify_signature_only(
+        &header, message, signature, &alg
+    ));
 }
 
 #[test]
@@ -56,7 +63,7 @@ fn hmac_256_bad_secret() {
 fn missing_alg() {
     let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
 
-    let header = json!({ });
+    let header = json!({});
     let claims = json!({ "aud": "test" });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
 
@@ -95,7 +102,8 @@ fn round_trip_claims_and_custom_header() {
     let verifier = Verifier::create().build().unwrap();
 
     // We have to use the lower-level for_time API if we want to see the header
-    let TokenData { header, claims, .. } = verifier.verify_for_time(token, &alg, get_time()).unwrap();
+    let TokenData { header, claims, .. } =
+        verifier.verify_for_time(token, &alg, get_time()).unwrap();
 
     assert_eq!(my_claims, claims);
     assert_eq!(header.get("my_hdr").unwrap(), "my_hdr_val");
@@ -121,7 +129,8 @@ fn round_trip_claims_and_kid() {
     let verifier = Verifier::create().build().unwrap();
 
     // We have to use the lower-level for_time API if we want to see the header
-    let TokenData {header, claims, ..} = verifier.verify_for_time(token, &alg, get_time()).unwrap();
+    let TokenData { header, claims, .. } =
+        verifier.verify_for_time(token, &alg, get_time()).unwrap();
 
     assert_eq!(my_claims, claims);
     assert_eq!(header.get("kid").unwrap(), "kid1234");
@@ -149,7 +158,8 @@ fn round_trip_claims_and_wrong_kid() {
     let verifier = Verifier::create().build().unwrap();
 
     // We have to use the lower-level for_time API if we want to see the header
-    let TokenData { header, claims, .. } = verifier.verify_for_time(token, &alg, get_time()).unwrap();
+    let TokenData { header, claims, .. } =
+        verifier.verify_for_time(token, &alg, get_time()).unwrap();
 
     assert_eq!(my_claims, claims);
     assert_eq!(header.get("kid").unwrap(), "kid1234");

@@ -40,7 +40,7 @@ fn verify_none_with_non_empty_signature() {
 #[should_panic(expected = "AlgorithmMismatch")]
 fn missing_alg() {
     let alg = Algorithm::new_unsecured().unwrap();
-    let header = json!({ });
+    let header = json!({});
     let claims = json!({ "aud": "test" });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
 
@@ -84,8 +84,8 @@ fn round_trip_claims() {
 fn no_trailing_dot() {
     let alg = Algorithm::new_unsecured().unwrap();
 
-    let token_ok   = "eyJhbGciOiJub25lIn0.eyJjb21wYW55IjoiQUNNRSIsInN1YiI6ImJAYi5jb20ifQ.";
-    let token_bad  = "eyJhbGciOiJub25lIn0.eyJjb21wYW55IjoiQUNNRSIsInN1YiI6ImJAYi5jb20ifQ";
+    let token_ok = "eyJhbGciOiJub25lIn0.eyJjb21wYW55IjoiQUNNRSIsInN1YiI6ImJAYi5jb20ifQ.";
+    let token_bad = "eyJhbGciOiJub25lIn0.eyJjb21wYW55IjoiQUNNRSIsInN1YiI6ImJAYi5jb20ifQ";
 
     let verifier = Verifier::create().build().unwrap();
     let result: Result<Value, jwt::error::Error> = verifier.verify(token_ok, &alg);
@@ -99,8 +99,8 @@ fn no_trailing_dot() {
 fn token_with_non_empty_signature() {
     let alg = Algorithm::new_unsecured().unwrap();
 
-    let token_ok   = "eyJhbGciOiJub25lIn0.eyJjb21wYW55IjoiQUNNRSIsInN1YiI6ImJAYi5jb20ifQ.";
-    let token_bad  = "eyJhbGciOiJub25lIn0.eyJjb21wYW55IjoiQUNNRSIsInN1YiI6ImJAYi5jb20ifQ.1234";
+    let token_ok = "eyJhbGciOiJub25lIn0.eyJjb21wYW55IjoiQUNNRSIsInN1YiI6ImJAYi5jb20ifQ.";
+    let token_bad = "eyJhbGciOiJub25lIn0.eyJjb21wYW55IjoiQUNNRSIsInN1YiI6ImJAYi5jb20ifQ.1234";
 
     let verifier = Verifier::create().build().unwrap();
     let result: Result<Value, jwt::error::Error> = verifier.verify(token_ok, &alg);

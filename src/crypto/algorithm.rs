@@ -1,14 +1,13 @@
-use std::fmt;
-use std::str::FromStr;
 use ring::signature;
 use serde::{Deserialize, Serialize};
 use simple_asn1::BigUint;
+use std::fmt;
+use std::str::FromStr;
 
-use crate::error::{Error, ErrorDetails};
-use crate::raw::*;
-use crate::pem::decoder::PemEncodedKey;
 use crate::crypto::*;
-
+use crate::error::{Error, ErrorDetails};
+use crate::pem::decoder::PemEncodedKey;
+use crate::raw::*;
 
 impl From<AlgorithmID> for &dyn signature::VerificationAlgorithm {
     fn from(alg: AlgorithmID) -> Self {
@@ -27,7 +26,6 @@ impl From<AlgorithmID> for &dyn signature::VerificationAlgorithm {
         }
     }
 }
-
 
 /// Uniquely identifies a specific cryptographic algorithm for signing or verifying tokens
 #[derive(Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
@@ -115,7 +113,10 @@ impl FromStr for AlgorithmID {
             "PS384" => Ok(AlgorithmID::PS384),
             "PS512" => Ok(AlgorithmID::PS512),
 
-            _ => Err(Error::InvalidInput(ErrorDetails::new(format!("Unknown algorithm name {}", s)))),
+            _ => Err(Error::InvalidInput(ErrorDetails::new(format!(
+                "Unknown algorithm name {}",
+                s
+            )))),
         }
     }
 }
@@ -153,27 +154,24 @@ mod tests {
     }
 }
 
-fn ensure_hmac_id(id: AlgorithmID) -> Result<(), Error>
-{
+fn ensure_hmac_id(id: AlgorithmID) -> Result<(), Error> {
     match id {
         AlgorithmID::HS256 => Ok(()),
         AlgorithmID::HS384 => Ok(()),
         AlgorithmID::HS512 => Ok(()),
-        _ => Err(Error::AlgorithmMismatch())
+        _ => Err(Error::AlgorithmMismatch()),
     }
 }
 
-fn ensure_ecdsa_id(id: AlgorithmID) -> Result<(), Error>
-{
+fn ensure_ecdsa_id(id: AlgorithmID) -> Result<(), Error> {
     match id {
         AlgorithmID::ES256 => Ok(()),
         AlgorithmID::ES384 => Ok(()),
-        _ => Err(Error::AlgorithmMismatch())
+        _ => Err(Error::AlgorithmMismatch()),
     }
 }
 
-fn ensure_rsa_id(id: AlgorithmID) -> Result<(), Error>
-{
+fn ensure_rsa_id(id: AlgorithmID) -> Result<(), Error> {
     match id {
         AlgorithmID::RS256 => Ok(()),
         AlgorithmID::RS384 => Ok(()),
@@ -182,7 +180,7 @@ fn ensure_rsa_id(id: AlgorithmID) -> Result<(), Error>
         AlgorithmID::PS256 => Ok(()),
         AlgorithmID::PS384 => Ok(()),
         AlgorithmID::PS512 => Ok(()),
-        _ => Err(Error::AlgorithmMismatch())
+        _ => Err(Error::AlgorithmMismatch()),
     }
 }
 
@@ -200,16 +198,14 @@ fn ensure_rsa_id(id: AlgorithmID) -> Result<(), Error>
 /// for example.
 ///
 #[derive(Debug)]
-pub struct Algorithm
-{
+pub struct Algorithm {
     id: AlgorithmID,
     kid: Option<String>,
 
     secret_or_key: SecretOrKey,
 }
 
-impl Algorithm
-{
+impl Algorithm {
     /// Returns the `AlgorithmID` that was used to construct the `Algorithm`
     pub fn id(&self) -> AlgorithmID {
         self.id
@@ -230,7 +226,7 @@ impl Algorithm
     pub fn kid(&self) -> Option<&str> {
         match &self.kid {
             Some(string) => Some(string.as_ref()),
-            None => None
+            None => None,
         }
     }
 
@@ -279,8 +275,15 @@ impl Algorithm
 
         let ring_alg = id.into();
         let pem_key = PemEncodedKey::new(key)?;
-        let signing_key = signature::EcdsaKeyPair::from_pkcs8(ring_alg, pem_key.as_ec_private_key()?)
-            .map_err(|e| Error::InvalidInput(ErrorDetails::map("Failed to create ECDSA key pair for signing", Box::new(e))))?;
+        let signing_key =
+            signature::EcdsaKeyPair::from_pkcs8(ring_alg, pem_key.as_ec_private_key()?).map_err(
+                |e| {
+                    Error::InvalidInput(ErrorDetails::map(
+                        "Failed to create ECDSA key pair for signing",
+                        Box::new(e),
+                    ))
+                },
+            )?;
 
         Ok(Algorithm {
             id: id,
@@ -312,8 +315,13 @@ impl Algorithm
         ensure_rsa_id(id)?;
 
         let pem_key = PemEncodedKey::new(key)?;
-        let key_pair = signature::RsaKeyPair::from_der(pem_key.as_rsa_private_key()?)
-            .map_err(|e| Error::InvalidInput(ErrorDetails::map("Failed to create RSA key for signing", Box::new(e))))?;
+        let key_pair =
+            signature::RsaKeyPair::from_der(pem_key.as_rsa_private_key()?).map_err(|e| {
+                Error::InvalidInput(ErrorDetails::map(
+                    "Failed to create RSA key for signing",
+                    Box::new(e),
+                ))
+            })?;
 
         Ok(Algorithm {
             id: id,
@@ -344,7 +352,11 @@ impl Algorithm
     /// described in terms of (base64 encoded) modulus and exponent values.
     ///
     /// This algorithm may only be used for verifying tokens
-    pub fn new_rsa_n_e_b64_verifier(id: AlgorithmID, n_b64: &str, e_b64: &str) -> Result<Self, Error> {
+    pub fn new_rsa_n_e_b64_verifier(
+        id: AlgorithmID,
+        n_b64: &str,
+        e_b64: &str,
+    ) -> Result<Self, Error> {
         ensure_rsa_id(id)?;
 
         let n = BigUint::from_bytes_be(&b64_decode(n_b64)?).to_bytes_be();
@@ -362,16 +374,18 @@ impl Algorithm
         &self,
         kid: Option<&str>,
         message: impl AsRef<str>,
-        signature: impl AsRef<str>)
-    -> Result<(), Error> {
-
+        signature: impl AsRef<str>,
+    ) -> Result<(), Error> {
         // We need an Option(&str) instead of Option(String)
         let kid_matches = match &self.kid {
             Some(string) => kid == Some(string.as_ref()),
-            None => kid == None
+            None => kid == None,
         };
         if !kid_matches {
-            return Err(Error::MalformedToken(ErrorDetails::new(format!("'kid' ({:?}) didn't match ID ({:?}) associated with Algorithm", kid, self.kid))));
+            return Err(Error::MalformedToken(ErrorDetails::new(format!(
+                "'kid' ({:?}) didn't match ID ({:?}) associated with Algorithm",
+                kid, self.kid
+            ))));
         }
 
         match self.id {
@@ -382,32 +396,36 @@ impl Algorithm
                     Err(Error::InvalidSignature())
                 }
             }
-            AlgorithmID::HS256 | AlgorithmID::HS384 | AlgorithmID::HS512 => {
-                hmac::verify(self.id, &self.secret_or_key, message.as_ref(), signature.as_ref())
-            }
-            AlgorithmID::ES256 | AlgorithmID::ES384 => {
-                ecdsa::verify(self.id, &self.secret_or_key, message.as_ref(), signature.as_ref())
-            }
+            AlgorithmID::HS256 | AlgorithmID::HS384 | AlgorithmID::HS512 => hmac::verify(
+                self.id,
+                &self.secret_or_key,
+                message.as_ref(),
+                signature.as_ref(),
+            ),
+            AlgorithmID::ES256 | AlgorithmID::ES384 => ecdsa::verify(
+                self.id,
+                &self.secret_or_key,
+                message.as_ref(),
+                signature.as_ref(),
+            ),
             AlgorithmID::RS256
             | AlgorithmID::RS384
             | AlgorithmID::RS512
             | AlgorithmID::PS256
             | AlgorithmID::PS384
-            | AlgorithmID::PS512 => {
-                rsa::verify(self.id, &self.secret_or_key, message.as_ref(), signature.as_ref())
-            }
+            | AlgorithmID::PS512 => rsa::verify(
+                self.id,
+                &self.secret_or_key,
+                message.as_ref(),
+                signature.as_ref(),
+            ),
         }
     }
 
     /// Lower-level api that can be used to calculate a signature for a message
-    pub fn sign(
-        &self,
-        message: &str)
-    -> Result<String, Error> {
+    pub fn sign(&self, message: &str) -> Result<String, Error> {
         match self.id {
-            AlgorithmID::NONE => {
-                Ok("".to_owned())
-            }
+            AlgorithmID::NONE => Ok("".to_owned()),
             AlgorithmID::HS256 | AlgorithmID::HS384 | AlgorithmID::HS512 => {
                 hmac::sign(self.id, &self.secret_or_key, message)
             }
@@ -419,9 +437,7 @@ impl Algorithm
             | AlgorithmID::RS512
             | AlgorithmID::PS256
             | AlgorithmID::PS384
-            | AlgorithmID::PS512 => {
-                rsa::sign(self.id, &self.secret_or_key, message)
-            }
+            | AlgorithmID::PS512 => rsa::sign(self.id, &self.secret_or_key, message),
         }
     }
 }

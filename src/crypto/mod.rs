@@ -1,9 +1,9 @@
 use ring::signature;
 
-pub(crate) mod hmac;
-pub(crate) mod ecdsa;
-pub(crate) mod rsa;
 pub(crate) mod algorithm;
+pub(crate) mod ecdsa;
+pub(crate) mod hmac;
+pub(crate) mod rsa;
 
 #[derive(Debug)]
 pub enum SecretOrKey {
@@ -22,4 +22,3 @@ pub enum SecretOrKey {
     RsaUnparsedKey(Vec<u8>),
     RsaParameters(Vec<u8>, Vec<u8>), // (n, e)
 }
-

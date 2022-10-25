@@ -2,9 +2,9 @@ use std::str::FromStr;
 
 use serde::ser::Serialize;
 
-use crate::TokenData;
-use crate::error::{Error, ErrorDetails};
 use crate::crypto::algorithm::{Algorithm, AlgorithmID};
+use crate::error::{Error, ErrorDetails};
+use crate::TokenData;
 
 pub(crate) fn b64_encode(input: &[u8]) -> String {
     base64::encode_config(input, base64::URL_SAFE_NO_PAD)
@@ -17,8 +17,9 @@ pub(crate) fn b64_decode(input: &str) -> Result<Vec<u8>, Error> {
 
 /// Serializes a struct to JSON and encodes it in base64
 pub(crate) fn b64_encode_part<T: Serialize>(input: &T) -> Result<String, Error> {
-    let json = serde_json::to_string(input)
-        .map_err(|e| Error::InvalidInput(ErrorDetails::map("json serialize failure", Box::new(e))))?;
+    let json = serde_json::to_string(input).map_err(|e| {
+        Error::InvalidInput(ErrorDetails::map("json serialize failure", Box::new(e)))
+    })?;
     Ok(b64_encode(json.as_bytes()))
 }
 
@@ -29,7 +30,11 @@ macro_rules! expect_two {
         let mut i = $iter;
         match (i.next(), i.next(), i.next()) {
             (Some(first), Some(second), None) => (first, second),
-            _ => return Err(Error::MalformedToken(ErrorDetails::new("Failed to split JWT into header.claims.signature parts"))),
+            _ => {
+                return Err(Error::MalformedToken(ErrorDetails::new(
+                    "Failed to split JWT into header.claims.signature parts",
+                )))
+            }
         }
     }};
 }
@@ -88,7 +93,7 @@ pub fn split_token<'a>(token: &'a str) -> Result<TokenSlices<'a>, Error> {
         message,
         signature,
         header,
-        claims
+        claims,
     })
 }
 
@@ -116,7 +121,9 @@ pub fn split_token<'a>(token: &'a str) -> Result<TokenSlices<'a>, Error> {
 /// # Ok(())
 /// # }
 /// ```
-pub fn decode_json_token_slice(encoded_slice: impl AsRef<str>) -> Result<serde_json::value::Value, Error> {
+pub fn decode_json_token_slice(
+    encoded_slice: impl AsRef<str>,
+) -> Result<serde_json::value::Value, Error> {
     let s = String::from_utf8(b64_decode(encoded_slice.as_ref())?)
         .map_err(|e| Error::InvalidInput(ErrorDetails::map("utf8 decode failure", Box::new(e))))?;
     let value = serde_json::from_str(&s)
@@ -163,7 +170,11 @@ pub fn decode_only(token: impl AsRef<str>) -> Result<TokenData, Error> {
     let TokenSlices { header, claims, .. } = split_token(token.as_ref())?;
     let header = decode_json_token_slice(header)?;
     let claims = decode_json_token_slice(claims)?;
-    Ok(TokenData { header: header, claims: claims, _extensible: () })
+    Ok(TokenData {
+        header: header,
+        claims: claims,
+        _extensible: (),
+    })
 }
 
 /// Just verifies the signature of a token's message
@@ -183,12 +194,11 @@ pub fn decode_only(token: impl AsRef<str>) -> Result<TokenData, Error> {
 /// # }
 /// ```
 pub fn verify_signature_only(
-        header: &serde_json::value::Value,
-        message: impl AsRef<str>,
-        signature: impl AsRef<str>,
-        algorithm: &Algorithm,
-    ) -> Result<(), Error>
-{
+    header: &serde_json::value::Value,
+    message: impl AsRef<str>,
+    signature: impl AsRef<str>,
+    algorithm: &Algorithm,
+) -> Result<(), Error> {
     match header.get("alg") {
         Some(serde_json::value::Value::String(alg)) => {
             let alg = AlgorithmID::from_str(alg)?;
@@ -200,13 +210,17 @@ pub fn verify_signature_only(
             // An Algorithm may relate to a specific 'kid' which we verify...
             let kid = match header.get("kid") {
                 Some(serde_json::value::Value::String(k)) => Some(k.as_ref()),
-                Some(_) => return Err(Error::MalformedToken(ErrorDetails::new("Non-string 'kid' found"))),
-                None => None
+                Some(_) => {
+                    return Err(Error::MalformedToken(ErrorDetails::new(
+                        "Non-string 'kid' found",
+                    )))
+                }
+                None => None,
             };
 
             algorithm.verify(kid, message, signature)?;
-        },
-        _ => return Err(Error::AlgorithmMismatch())
+        }
+        _ => return Err(Error::AlgorithmMismatch()),
     }
 
     Ok(())

@@ -1,9 +1,9 @@
-use ring::hmac;
-use ring::constant_time::verify_slices_are_equal;
-use crate::raw::*;
-use crate::error::{Error, ErrorDetails};
-use crate::crypto::SecretOrKey;
 use crate::crypto::algorithm::AlgorithmID;
+use crate::crypto::SecretOrKey;
+use crate::error::{Error, ErrorDetails};
+use crate::raw::*;
+use ring::constant_time::verify_slices_are_equal;
+use ring::hmac;
 
 impl From<AlgorithmID> for hmac::Algorithm {
     fn from(alg: AlgorithmID) -> Self {
@@ -16,18 +16,29 @@ impl From<AlgorithmID> for hmac::Algorithm {
     }
 }
 
-pub(crate) fn sign(alg: AlgorithmID, secret_or_key: &SecretOrKey, message: &str) -> Result<String, Error> {
+pub(crate) fn sign(
+    alg: AlgorithmID,
+    secret_or_key: &SecretOrKey,
+    message: &str,
+) -> Result<String, Error> {
     match secret_or_key {
         SecretOrKey::Secret(key) => {
             let ring_alg = alg.into();
             let digest = hmac::sign(&hmac::Key::new(ring_alg, &key), message.as_bytes());
             Ok(b64_encode(digest.as_ref()))
-        },
-        _ => Err(Error::InvalidInput(ErrorDetails::new("Missing secret for HMAC signing")))
+        }
+        _ => Err(Error::InvalidInput(ErrorDetails::new(
+            "Missing secret for HMAC signing",
+        ))),
     }
 }
 
-pub fn verify(algorithm: AlgorithmID, secret_or_key: &SecretOrKey, message: &str, signature: &str) -> Result<(), Error> {
+pub fn verify(
+    algorithm: AlgorithmID,
+    secret_or_key: &SecretOrKey,
+    message: &str,
+    signature: &str,
+) -> Result<(), Error> {
     // we just re-sign the message with the key and compare if they are equal
     let signed = sign(algorithm, secret_or_key, message)?;
     verify_slices_are_equal(signature.as_bytes(), signed.as_ref())

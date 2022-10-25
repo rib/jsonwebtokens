@@ -1,7 +1,7 @@
 use serde_json::json;
 
 use jsonwebtokens as jwt;
-use jwt::{Algorithm, AlgorithmID, Verifier, error::Error};
+use jwt::{error::Error, Algorithm, AlgorithmID, Verifier};
 
 mod common;
 
@@ -23,7 +23,7 @@ fn token_just_expired() {
         Err(Error::TokenExpiredAt(at)) => {
             assert_eq!(at, REFERENCE_TIME);
         }
-        _ => unreachable!("Token not expired")
+        _ => unreachable!("Token not expired"),
     }
 }
 
@@ -40,7 +40,7 @@ fn token_expired() {
         Err(Error::TokenExpiredAt(at)) => {
             assert_eq!(at, REFERENCE_TIME);
         }
-        _ => unreachable!("Token not expired")
+        _ => unreachable!("Token not expired"),
     }
 }
 
@@ -51,10 +51,10 @@ fn ignore_token_expired() {
     let claims = json!({ "exp": REFERENCE_TIME });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
 
-    let verifier = Verifier::create()
-        .ignore_exp()
-        .build().unwrap();
-    let _token_data = verifier.verify_for_time(&token_str, &alg, REFERENCE_TIME + 100).unwrap();
+    let verifier = Verifier::create().ignore_exp().build().unwrap();
+    let _token_data = verifier
+        .verify_for_time(&token_str, &alg, REFERENCE_TIME + 100)
+        .unwrap();
 }
 
 #[test]
@@ -64,10 +64,10 @@ fn token_recently_expired_with_leeway() {
     let claims = json!({ "exp": REFERENCE_TIME });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
 
-    let verifier = Verifier::create()
-        .leeway(5)
-        .build().unwrap();
-    let _token_data = verifier.verify_for_time(&token_str, &alg, REFERENCE_TIME + 1).unwrap();
+    let verifier = Verifier::create().leeway(5).build().unwrap();
+    let _token_data = verifier
+        .verify_for_time(&token_str, &alg, REFERENCE_TIME + 1)
+        .unwrap();
 }
 
 #[test]
@@ -83,7 +83,9 @@ fn token_used_exactly_at_nbf_time() {
     //  the not-before date/time listed in the "nbf" claim."
     //
     let verifier = Verifier::create().build().unwrap();
-    let _token_data = verifier.verify_for_time(&token_str, &alg, REFERENCE_TIME).unwrap();
+    let _token_data = verifier
+        .verify_for_time(&token_str, &alg, REFERENCE_TIME)
+        .unwrap();
 }
 
 #[test]
@@ -100,7 +102,9 @@ fn token_used_early() {
     //  the not-before date/time listed in the "nbf" claim."
     //
     let verifier = Verifier::create().build().unwrap();
-    let _token_data = verifier.verify_for_time(&token_str, &alg, REFERENCE_TIME).unwrap();
+    let _token_data = verifier
+        .verify_for_time(&token_str, &alg, REFERENCE_TIME)
+        .unwrap();
 }
 
 #[test]
@@ -110,10 +114,10 @@ fn ignore_token_used_early() {
     let claims = json!({ "nbf": REFERENCE_TIME + 100 });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
 
-    let verifier = Verifier::create()
-        .ignore_nbf()
-        .build().unwrap();
-    let _token_data = verifier.verify_for_time(&token_str, &alg, REFERENCE_TIME).unwrap();
+    let verifier = Verifier::create().ignore_nbf().build().unwrap();
+    let _token_data = verifier
+        .verify_for_time(&token_str, &alg, REFERENCE_TIME)
+        .unwrap();
 }
 
 #[test]
@@ -123,10 +127,10 @@ fn token_used_slightly_early_with_leeway() {
     let claims = json!({ "nbf": REFERENCE_TIME + 1 });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
 
-    let verifier = Verifier::create()
-        .leeway(5)
-        .build().unwrap();
-    let _token_data = verifier.verify_for_time(&token_str, &alg, REFERENCE_TIME).unwrap();
+    let verifier = Verifier::create().leeway(5).build().unwrap();
+    let _token_data = verifier
+        .verify_for_time(&token_str, &alg, REFERENCE_TIME)
+        .unwrap();
 }
 
 #[test]
@@ -137,9 +141,10 @@ fn token_used_before_issue() {
     let claims = json!({ "iat": REFERENCE_TIME + 100 });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
 
-    let verifier = Verifier::create()
-        .build().unwrap();
-    let _token_data = verifier.verify_for_time(&token_str, &alg, REFERENCE_TIME).unwrap();
+    let verifier = Verifier::create().build().unwrap();
+    let _token_data = verifier
+        .verify_for_time(&token_str, &alg, REFERENCE_TIME)
+        .unwrap();
 }
 
 #[test]
@@ -149,8 +154,8 @@ fn token_used_before_just_before_issue_with_leeway() {
     let claims = json!({ "iat": REFERENCE_TIME + 1 });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
 
-    let verifier = Verifier::create()
-        .leeway(5)
-        .build().unwrap();
-    let _token_data = verifier.verify_for_time(&token_str, &alg, REFERENCE_TIME).unwrap();
+    let verifier = Verifier::create().leeway(5).build().unwrap();
+    let _token_data = verifier
+        .verify_for_time(&token_str, &alg, REFERENCE_TIME)
+        .unwrap();
 }
