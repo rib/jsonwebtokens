@@ -2,7 +2,7 @@ use serde_json::json;
 use serde_json::value::Value;
 
 use jsonwebtokens as jwt;
-use jwt::{Algorithm, AlgorithmID, Verifier, TokenData};
+use jwt::{Algorithm, AlgorithmID, TokenData, Verifier};
 
 use crate::common::get_time;
 
@@ -99,7 +99,8 @@ fn round_trip_claims_and_custom_header() {
         let verifier = Verifier::create().build().unwrap();
 
         // We have to use the lower-level for_time API if we want to see the header
-        let TokenData { header, claims, .. } = verifier.verify_for_time(token, &alg, get_time()).unwrap();
+        let TokenData { header, claims, .. } =
+            verifier.verify_for_time(token, &alg, get_time()).unwrap();
 
         assert_eq!(my_claims, claims);
         assert_eq!(header.get("kid").unwrap(), "kid1234");

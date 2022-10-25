@@ -57,7 +57,12 @@ impl PemEncodedKey {
                 let pem_contents = content.contents;
                 let asn1_content = match simple_asn1::from_der(pem_contents.as_slice()) {
                     Ok(asn1) => asn1,
-                    Err(e) => return Err(Error::InvalidInput(ErrorDetails::map("Failed to parse PEM file", Box::new(e)))),
+                    Err(e) => {
+                        return Err(Error::InvalidInput(ErrorDetails::map(
+                            "Failed to parse PEM file",
+                            Box::new(e),
+                        )))
+                    }
                 };
 
                 match content.tag.as_ref() {
@@ -115,34 +120,53 @@ impl PemEncodedKey {
                                 standard: Standard::Pkcs8,
                             })
                         }
-                        None => Err(Error::InvalidInput(ErrorDetails::new("Failed to recognize any OID in PKCS#8 PEM file"))),
+                        None => Err(Error::InvalidInput(ErrorDetails::new(
+                            "Failed to recognize any OID in PKCS#8 PEM file",
+                        ))),
                     },
 
-                    _ => Err(Error::InvalidInput(ErrorDetails::new("Failed to recognize PKCS#1 or SEC1 or PKCS#8 markers in PEM file"))),
+                    _ => Err(Error::InvalidInput(ErrorDetails::new(
+                        "Failed to recognize PKCS#1 or SEC1 or PKCS#8 markers in PEM file",
+                    ))),
                 }
             }
-            Err(e) => Err(Error::InvalidInput(ErrorDetails::map("Failed to parse PEM file", Box::new(e)))),
+            Err(e) => Err(Error::InvalidInput(ErrorDetails::map(
+                "Failed to parse PEM file",
+                Box::new(e),
+            ))),
         }
     }
 
     pub fn as_ec_private_key(&self) -> Result<&[u8], Error> {
         match self.standard {
-            Standard::Pkcs1 => Err(Error::InvalidInput(ErrorDetails::new("Expected PKCS#8 PEM markers, not PKCS#1"))),
-            Standard::Sec1 => Err(Error::InvalidInput(ErrorDetails::new("Expected PKCS#8 PEM markers, not SEC1"))),
+            Standard::Pkcs1 => Err(Error::InvalidInput(ErrorDetails::new(
+                "Expected PKCS#8 PEM markers, not PKCS#1",
+            ))),
+            Standard::Sec1 => Err(Error::InvalidInput(ErrorDetails::new(
+                "Expected PKCS#8 PEM markers, not SEC1",
+            ))),
             Standard::Pkcs8 => match self.pem_type {
                 PemType::EcPrivate => Ok(self.content.as_slice()),
-                _ => Err(Error::InvalidInput(ErrorDetails::new("PEM key type mismatch (expected EC private key)"))),
+                _ => Err(Error::InvalidInput(ErrorDetails::new(
+                    "PEM key type mismatch (expected EC private key)",
+                ))),
             },
         }
     }
 
     pub fn as_ec_public_key(&self) -> Result<&[u8], Error> {
         match self.standard {
-            Standard::Pkcs1 => Err(Error::InvalidInput(ErrorDetails::new("Expected PKCS#8 PEM markers, not PKCS#1"))),
-            Standard::Sec1 => Err(Error::InvalidInput(ErrorDetails::new("Expected PKCS#8 PEM markers, not SEC1"))),
+            Standard::Pkcs1 => Err(Error::InvalidInput(ErrorDetails::new(
+                "Expected PKCS#8 PEM markers, not PKCS#1",
+            ))),
+            Standard::Sec1 => Err(Error::InvalidInput(ErrorDetails::new(
+                "Expected PKCS#8 PEM markers, not SEC1",
+            ))),
             Standard::Pkcs8 => match self.pem_type {
                 PemType::EcPublic => extract_first_bitstring(&self.asn1),
-                _ => Err(Error::InvalidInput(ErrorDetails::new("PEM key type mismatch (expected EC public key)"))),
+                _ => Err(Error::InvalidInput(ErrorDetails::new(
+                    "PEM key type mismatch (expected EC public key)",
+                ))),
             },
         }
     }
@@ -151,12 +175,18 @@ impl PemEncodedKey {
         match self.standard {
             Standard::Pkcs1 => match self.pem_type {
                 PemType::RsaPublic => Ok(self.content.as_slice()),
-                _ => Err(Error::InvalidInput(ErrorDetails::new("PEM key type mismatch (expected RSA public key)"))),
-            }
-            Standard::Sec1 => Err(Error::InvalidInput(ErrorDetails::new("Expected PKCS#1 or PKCS#8 PEM markers, not SEC1"))),
+                _ => Err(Error::InvalidInput(ErrorDetails::new(
+                    "PEM key type mismatch (expected RSA public key)",
+                ))),
+            },
+            Standard::Sec1 => Err(Error::InvalidInput(ErrorDetails::new(
+                "Expected PKCS#1 or PKCS#8 PEM markers, not SEC1",
+            ))),
             Standard::Pkcs8 => match self.pem_type {
                 PemType::RsaPublic => extract_first_bitstring(&self.asn1),
-                _ => Err(Error::InvalidInput(ErrorDetails::new("PEM key type mismatch (expected RSA public key)"))),
+                _ => Err(Error::InvalidInput(ErrorDetails::new(
+                    "PEM key type mismatch (expected RSA public key)",
+                ))),
             },
         }
     }
@@ -165,12 +195,18 @@ impl PemEncodedKey {
         match self.standard {
             Standard::Pkcs1 => match self.pem_type {
                 PemType::RsaPrivate => Ok(self.content.as_slice()),
-                _ => Err(Error::InvalidInput(ErrorDetails::new("PEM key type mismatch (expected RSA private key)"))),
-            }
-            Standard::Sec1 => Err(Error::InvalidInput(ErrorDetails::new("Expected PKCS#1 or PKCS#8 PEM markers, not SEC1"))),
+                _ => Err(Error::InvalidInput(ErrorDetails::new(
+                    "PEM key type mismatch (expected RSA private key)",
+                ))),
+            },
+            Standard::Sec1 => Err(Error::InvalidInput(ErrorDetails::new(
+                "Expected PKCS#1 or PKCS#8 PEM markers, not SEC1",
+            ))),
             Standard::Pkcs8 => match self.pem_type {
                 PemType::RsaPrivate => extract_first_bitstring(&self.asn1),
-                _ => Err(Error::InvalidInput(ErrorDetails::new("PEM key type mismatch (expected RSA private key)"))),
+                _ => Err(Error::InvalidInput(ErrorDetails::new(
+                    "PEM key type mismatch (expected RSA private key)",
+                ))),
             },
         }
     }
@@ -199,7 +235,9 @@ fn extract_first_bitstring(asn1: &[simple_asn1::ASN1Block]) -> Result<&[u8], Err
         }
     }
 
-    Err(Error::InvalidInput(ErrorDetails::new("Failed to extract ASN.1 bit string")))
+    Err(Error::InvalidInput(ErrorDetails::new(
+        "Failed to extract ASN.1 bit string",
+    )))
 }
 
 /// Find whether this is EC or RSA

@@ -16,7 +16,10 @@ impl ErrorDetails {
         }
     }
 
-    pub fn map(desc: impl Into<String>, src: Box<dyn StdError + Send + Sync + 'static>) -> ErrorDetails {
+    pub fn map(
+        desc: impl Into<String>,
+        src: Box<dyn StdError + Send + Sync + 'static>,
+    ) -> ErrorDetails {
         ErrorDetails {
             desc: desc.into(),
             src: Some(src),
@@ -26,17 +29,13 @@ impl ErrorDetails {
 
 impl From<String> for ErrorDetails {
     fn from(s: String) -> Self {
-        ErrorDetails {
-            desc: s,
-            src: None,
-        }
+        ErrorDetails { desc: s, src: None }
     }
 }
 
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum Error {
-
     /// Any of: invalid key data, malformed data for encoding, base864/utf8 decode/encode errors
     InvalidInput(ErrorDetails),
 
@@ -53,17 +52,15 @@ pub enum Error {
     MalformedToken(ErrorDetails),
 }
 
-
-
 impl StdError for Error {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
         match self {
-            Error::InvalidInput(ErrorDetails { src: Some(s), ..}) => Some(s.as_ref()),
+            Error::InvalidInput(ErrorDetails { src: Some(s), .. }) => Some(s.as_ref()),
             Error::AlgorithmMismatch() => None,
             Error::InvalidSignature() => None,
             Error::TokenExpiredAt(_) => None,
-            Error::MalformedToken(ErrorDetails { src: Some(s), ..}) => Some(s.as_ref()),
-            _ => None
+            Error::MalformedToken(ErrorDetails { src: Some(s), .. }) => Some(s.as_ref()),
+            _ => None,
         }
     }
 }
