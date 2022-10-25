@@ -164,6 +164,10 @@ let claims = raw::decode_json_token_slice(claims)?;
 verifier.verify_claims_only(&claims, time_now)?;
 ```
 
+# Examples
+
+See [HMAC Sign & Verify](examples/hmac_sign_and_verify.rs)
+
 # Algorithms Supported
 
 Array of supported algorithms. The following algorithms are currently supported.
