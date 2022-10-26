@@ -28,7 +28,7 @@ impl From<AlgorithmID> for &dyn signature::VerificationAlgorithm {
 }
 
 /// Uniquely identifies a specific cryptographic algorithm for signing or verifying tokens
-#[derive(Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum AlgorithmID {
     /// Unsecured JWT
@@ -246,7 +246,7 @@ impl Algorithm {
         ensure_hmac_id(id)?;
 
         Ok(Algorithm {
-            id: id,
+            id,
             kid: None,
             secret_or_key: SecretOrKey::Secret(secret.into()),
         })
@@ -261,7 +261,7 @@ impl Algorithm {
         ensure_hmac_id(id)?;
 
         Ok(Algorithm {
-            id: id,
+            id,
             kid: None,
             secret_or_key: SecretOrKey::Secret(b64_decode(secret.as_ref())?),
         })
@@ -286,7 +286,7 @@ impl Algorithm {
             )?;
 
         Ok(Algorithm {
-            id: id,
+            id,
             kid: None,
             secret_or_key: SecretOrKey::EcdsaKeyPair(signing_key),
         })
@@ -302,7 +302,7 @@ impl Algorithm {
         let ec_pub_key = pem_key.as_ec_public_key()?;
 
         Ok(Algorithm {
-            id: id,
+            id,
             kid: None,
             secret_or_key: SecretOrKey::EcdsaUnparsedKey(ec_pub_key.to_vec()),
         })
@@ -324,7 +324,7 @@ impl Algorithm {
             })?;
 
         Ok(Algorithm {
-            id: id,
+            id,
             kid: None,
             secret_or_key: SecretOrKey::RsaKeyPair(key_pair),
         })
@@ -340,7 +340,7 @@ impl Algorithm {
         let rsa_pub_key = pem_key.as_rsa_public_key()?;
 
         Ok(Algorithm {
-            id: id,
+            id,
             kid: None,
             secret_or_key: SecretOrKey::RsaUnparsedKey(rsa_pub_key.to_vec()),
         })
@@ -363,7 +363,7 @@ impl Algorithm {
         let e = BigUint::from_bytes_be(&b64_decode(e_b64)?).to_bytes_be();
 
         Ok(Algorithm {
-            id: id,
+            id,
             kid: None,
             secret_or_key: SecretOrKey::RsaParameters(n, e),
         })

@@ -24,7 +24,7 @@ pub(crate) fn sign(
     match secret_or_key {
         SecretOrKey::Secret(key) => {
             let ring_alg = alg.into();
-            let digest = hmac::sign(&hmac::Key::new(ring_alg, &key), message.as_bytes());
+            let digest = hmac::sign(&hmac::Key::new(ring_alg, key), message.as_bytes());
             Ok(b64_encode(digest.as_ref()))
         }
         _ => Err(Error::InvalidInput(ErrorDetails::new(
