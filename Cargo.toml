@@ -25,4 +25,4 @@ simple_asn1 = "~0.5.1" # Note: there was an API break at 0.5, fixed in 0.5.1
 ring = { version = "0.16", features = ["std"] }
 
 [dev-dependencies]
-tokio-test = "0.2"
+tokio-test = "0.4"
