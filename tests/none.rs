@@ -33,7 +33,7 @@ fn verify_none() {
 fn verify_none_with_non_empty_signature() {
     let alg = Algorithm::new_unsecured().unwrap();
     let sig = "c0zGLzKEFWj0VxWuufTXiRMk5tlI5MbGDAYhzaxIYjo";
-    let _claims = alg.verify(None, "hello world", sig).unwrap();
+    alg.verify(None, "hello world", sig).unwrap();
 }
 
 #[test]

@@ -57,11 +57,40 @@ struct VerifierClosure {
 impl Eq for VerifierClosure {}
 impl PartialEq for VerifierClosure {
     fn eq(&self, other: &Self) -> bool {
-        return Arc::ptr_eq(&self.func, &other.func);
+        // WARNING:
+        //
+        // `Arc::ptr_eq(&self.func, &other.func)` is effectively implemented as:
+        //
+        // `Arc::as_ptr(&arc_a) == Arc::as_ptr(&arc_b)`
+        //
+        // which will notably result in comparing the vtable pointer for (wide) trait object pointers
+        // and does _not_ match the API documentation that states:
+        //
+        // > Returns true if the two Arcs point to the same allocation (in a vein similar to ptr::eq).
+        //
+        // (which is what we need here)
+        //
+        // See: https://github.com/rust-lang/rust/pull/80505
+        //
+        // To ensure we are comparing the data pointer component of any wide pointer then we
+        // additionally cast `Arc::as_ptr(&arc)` to a thin pointer to discard the vtable
+        //
+        // This avoid getting a `clippy::vtable_address_comparisons` error
+        //
+        // Ref: https://github.com/rust-lang/rust-clippy/issues/6524
+
+        let a = Arc::as_ptr(&self.func) as *const u8;
+        let b = Arc::as_ptr(&other.func) as *const u8;
+        std::ptr::eq(a, b)
+    }
+}
+impl std::fmt::Debug for VerifierClosure {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "VerifierClosure")
     }
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 enum VerifierKind {
     Closure(VerifierClosure),
 
@@ -369,8 +398,8 @@ impl Verifier {
         self.verify_claims_only(&claims, time_now)?;
 
         Ok(TokenData {
-            header: header,
-            claims: claims,
+            header,
+            claims,
             _extensible: (),
         })
     }
@@ -398,6 +427,7 @@ impl Verifier {
 }
 
 /// Configures the requirements for checking token claims with a builder-pattern API
+#[derive(Debug, Default)]
 pub struct VerifierBuilder {
     leeway: u32,
     ignore_exp: bool,
@@ -451,7 +481,7 @@ impl VerifierBuilder {
 
     /// Check that a claim equals one of the given string values
     pub fn string_equals_one_of(&mut self, claim: impl Into<String>, values: &[&str]) -> &mut Self {
-        let hash_set: HashSet<String> = values.into_iter().cloned().map(|s| s.to_owned()).collect();
+        let hash_set: HashSet<String> = values.iter().cloned().map(|s| s.to_owned()).collect();
         self.claim_verifiers
             .insert(claim.into(), VerifierKind::StringSet(hash_set));
         self
@@ -476,12 +506,13 @@ impl VerifierBuilder {
 
     /// Check that the claim matches one of the given regular expressions
     #[cfg(feature = "matching")]
+    #[allow(clippy::mutable_key_type)]
     pub fn string_matches_one_of(
         &mut self,
         claim: impl Into<String>,
         values: &[Regex],
     ) -> &mut Self {
-        let hash_set: HashSet<Pattern> = values.into_iter().cloned().map(|r| Pattern(r)).collect();
+        let hash_set: HashSet<Pattern> = values.iter().cloned().map(Pattern).collect();
         self.claim_verifiers
             .insert(claim.into(), VerifierKind::StringPatternSet(hash_set));
         self
