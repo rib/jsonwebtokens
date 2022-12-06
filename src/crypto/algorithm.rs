@@ -379,7 +379,7 @@ impl Algorithm {
         // We need an Option(&str) instead of Option(String)
         let kid_matches = match &self.kid {
             Some(string) => kid == Some(string.as_ref()),
-            None => kid == None,
+            None => true,
         };
         if !kid_matches {
             return Err(Error::MalformedToken(ErrorDetails::new(format!(
