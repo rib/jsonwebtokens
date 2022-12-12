@@ -26,7 +26,7 @@ fn string_equals() {
         .string_equals("my_claim", "foo")
         .build()
         .unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -46,7 +46,7 @@ fn string_equals_failure() {
         .string_equals("my_claim", "food")
         .build()
         .unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -65,7 +65,7 @@ fn string_equals_missing() {
         .string_equals("my_claim", "foo")
         .build()
         .unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[cfg(feature = "matching")]
@@ -85,7 +85,7 @@ fn string_matches() {
         .string_matches("my_claim", Regex::new("[fo]+").unwrap())
         .build()
         .unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[cfg(feature = "matching")]
@@ -106,7 +106,7 @@ fn string_matches_failure() {
         .string_matches("my_claim", Regex::new("[bar]+").unwrap())
         .build()
         .unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[cfg(feature = "matching")]
@@ -126,7 +126,7 @@ fn string_matches_missing() {
         .string_matches("my_claim", Regex::new("[bar]+").unwrap())
         .build()
         .unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -140,7 +140,7 @@ fn string_equals_wrong_type() {
         .string_equals("my_claim", "1234")
         .build()
         .unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -153,7 +153,7 @@ fn closure_verify_u64_claim() {
         .claim_callback("my_claim", |v| v.is_u64() && v.as_u64().unwrap() == 1234)
         .build()
         .unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -167,7 +167,7 @@ fn closure_fail_verify_u64_claim() {
         .claim_callback("my_claim", |v| v.is_u64() && v.as_u64().unwrap() == 1234)
         .build()
         .unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -178,7 +178,7 @@ fn non_integer_iat() {
     let claims = json!({ "iat": "1575057015" });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
     let verifier = Verifier::create().build().unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -189,7 +189,7 @@ fn non_integer_exp() {
     let claims = json!({ "exp": "1575057015" });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
     let verifier = Verifier::create().build().unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -200,7 +200,7 @@ fn non_integer_nbf() {
     let claims = json!({ "nbf": "1575057015" });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
     let verifier = Verifier::create().build().unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -211,7 +211,7 @@ fn non_string_iss() {
     let claims = json!({ "iss": 1234 });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
     let verifier = Verifier::create().build().unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -222,7 +222,7 @@ fn non_string_or_array_aud() {
     let claims = json!({ "aud": 1234 });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
     let verifier = Verifier::create().build().unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -232,12 +232,12 @@ fn string_or_array_aud() {
     let claims = json!({ "aud": "ACME" });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
     let verifier = Verifier::create().build().unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 
     let claims = json!({ "aud": ["ACME", "ACME2"] });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
     let verifier = Verifier::create().build().unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -248,7 +248,7 @@ fn non_string_array_aud() {
     let claims = json!({ "aud": ["ACME", "ACME2", 123] });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
     let verifier = Verifier::create().build().unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -259,7 +259,7 @@ fn non_string_sub() {
     let claims = json!({ "sub": 1234 });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
     let verifier = Verifier::create().build().unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -269,7 +269,7 @@ fn iss_equal() {
     let claims = json!({ "iss": "ACME" });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
     let verifier = Verifier::create().issuer("ACME").build().unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -280,7 +280,7 @@ fn iss_not_equal() {
     let claims = json!({ "iss": "ACMEv2" });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
     let verifier = Verifier::create().issuer("ACME").build().unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -290,7 +290,7 @@ fn aud_equal() {
     let claims = json!({ "aud": "ACME" });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
     let verifier = Verifier::create().audience("ACME").build().unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -300,7 +300,7 @@ fn aud_equal_with_array() {
     let claims = json!({ "aud": ["ACME", "ACME2"] });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
     let verifier = Verifier::create().audience("ACME").build().unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -311,7 +311,7 @@ fn aud_not_equal() {
     let claims = json!({ "aud": "ACMEv2" });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
     let verifier = Verifier::create().audience("ACME").build().unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -321,7 +321,7 @@ fn sub_equal() {
     let claims = json!({ "sub": "ACME" });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
     let verifier = Verifier::create().subject("ACME").build().unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -332,7 +332,7 @@ fn sub_not_equal() {
     let claims = json!({ "sub": "ACMEv2" });
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
     let verifier = Verifier::create().subject("ACME").build().unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -345,7 +345,7 @@ fn equals_one_of() {
         .string_equals_one_of("my_claim", &["value0", "value1"])
         .build()
         .unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -359,7 +359,7 @@ fn equals_one_of_failure() {
         .string_equals_one_of("my_claim", &["value1", "value2"])
         .build()
         .unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -373,7 +373,7 @@ fn equals_one_of_wrong_type() {
         .string_equals_one_of("my_claim", &["1234"])
         .build()
         .unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[cfg(feature = "matching")]
@@ -395,8 +395,8 @@ fn matches_one_of() {
         )
         .build()
         .unwrap();
-    let _claims0: Value = verifier.verify(&token0, &alg).unwrap();
-    let _claims1: Value = verifier.verify(&token1, &alg).unwrap();
+    let _claims0: Value = verifier.verify(token0, &alg).unwrap();
+    let _claims1: Value = verifier.verify(token1, &alg).unwrap();
 }
 
 #[cfg(feature = "matching")]
@@ -417,7 +417,7 @@ fn matches_one_of_failure() {
         )
         .build()
         .unwrap();
-    let _claims: Value = verifier.verify(&token, &alg).unwrap();
+    let _claims: Value = verifier.verify(token, &alg).unwrap();
 }
 
 #[cfg(feature = "matching")]
@@ -438,7 +438,7 @@ fn matches_one_of_missing() {
         )
         .build()
         .unwrap();
-    let _claims: Value = verifier.verify(&token, &alg).unwrap();
+    let _claims: Value = verifier.verify(token, &alg).unwrap();
 }
 
 #[test]
@@ -452,7 +452,7 @@ fn non_string_array_contains() {
         .string_or_array_contains("my_claim", "value1")
         .build()
         .unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -465,5 +465,5 @@ fn string_array_contains() {
         .string_or_array_contains("my_claim", "value2")
         .build()
         .unwrap();
-    let _claims: Value = verifier.verify(&token_str, &alg).unwrap();
+    let _claims: Value = verifier.verify(token_str, &alg).unwrap();
 }

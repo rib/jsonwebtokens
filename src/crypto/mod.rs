@@ -14,11 +14,11 @@ pub enum SecretOrKey {
     Secret(Vec<u8>),
 
     // ECDSA
-    EcdsaKeyPair(signature::EcdsaKeyPair),
+    EcdsaKeyPair(Box<signature::EcdsaKeyPair>),
     EcdsaUnparsedKey(Vec<u8>),
 
     // RSA
-    RsaKeyPair(signature::RsaKeyPair),
+    RsaKeyPair(Box<signature::RsaKeyPair>),
     RsaUnparsedKey(Vec<u8>),
     RsaParameters(Vec<u8>, Vec<u8>), // (n, e)
 }
