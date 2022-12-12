@@ -71,7 +71,7 @@ impl std::fmt::Display for Error {
             Error::InvalidInput(details) => write!(f, "Invalid Input: {}", details.desc),
             Error::AlgorithmMismatch() => write!(f, "JWT Algorithm Mismatch"),
             Error::InvalidSignature() => write!(f, "JWT Signature Invalid"),
-            Error::TokenExpiredAt(when) => write!(f, "JWT token expired at {}", when),
+            Error::TokenExpiredAt(when) => write!(f, "JWT token expired at {when}"),
             Error::MalformedToken(details) => write!(f, "JWT claims invalid: {}", details.desc),
         }
     }

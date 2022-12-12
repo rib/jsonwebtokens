@@ -214,8 +214,7 @@ impl Verifier {
                 Some(serde_json::value::Value::String(_)) => {}
                 Some(_) => {
                     return Err(Error::MalformedToken(ErrorDetails::new(format!(
-                        "Given '{}' not a string",
-                        string_claim
+                        "Given '{string_claim}' not a string"
                     ))));
                 }
                 None => {}
@@ -229,16 +228,14 @@ impl Verifier {
                     for subclaim in claim_array {
                         if !subclaim.is_string() {
                             return Err(Error::MalformedToken(ErrorDetails::new(format!(
-                                "Claim {}: array elements are not all strings",
-                                string_or_array
+                                "Claim {string_or_array}: array elements are not all strings"
                             ))));
                         }
                     }
                 }
                 Some(_) => {
                     return Err(Error::MalformedToken(ErrorDetails::new(format!(
-                        "Given '{}' not a string or an array of strings",
-                        string_or_array
+                        "Given '{string_or_array}' not a string or an array of strings"
                     ))));
                 }
                 None => {}
@@ -254,8 +251,7 @@ impl Verifier {
                         let closure = closure_container.func.as_ref();
                         if !closure(claim_value) {
                             return Err(Error::MalformedToken(ErrorDetails::new(format!(
-                                "Claim {}: verifier callback returned false for '{}'",
-                                claim_key, claim_value
+                                "Claim {claim_key}: verifier callback returned false for '{claim_value}'"
                             ))));
                         }
                     } else if let Value::String(claim_string) = claim_value {
@@ -263,16 +259,14 @@ impl Verifier {
                             VerifierKind::StringConstant(constant) => {
                                 if claim_string != constant {
                                     return Err(Error::MalformedToken(ErrorDetails::new(format!(
-                                        "Claim {}: {} != {}",
-                                        claim_key, claim_string, constant
+                                        "Claim {claim_key}: {claim_string} != {constant}"
                                     ))));
                                 }
                             }
                             VerifierKind::StringSet(constant_set) => {
                                 if !constant_set.contains(claim_string) {
                                     return Err(Error::MalformedToken(ErrorDetails::new(format!(
-                                        "Claim {}: {} not in set",
-                                        claim_key, claim_string
+                                        "Claim {claim_key}: {claim_string} not in set"
                                     ))));
                                 }
                             }
@@ -280,8 +274,7 @@ impl Verifier {
                             VerifierKind::StringPattern(pattern) => {
                                 if !pattern.is_match(claim_string) {
                                     return Err(Error::MalformedToken(ErrorDetails::new(format!(
-                                        "Claim {}: {} doesn't match regex {}",
-                                        claim_key, claim_string, pattern
+                                        "Claim {claim_key}: {claim_string} doesn't match regex {pattern}"
                                     ))));
                                 }
                             }
@@ -296,23 +289,20 @@ impl Verifier {
                                 }
                                 if !found_match {
                                     return Err(Error::MalformedToken(ErrorDetails::new(format!(
-                                        "Claim {}: {} doesn't match regex set",
-                                        claim_key, claim_string
+                                        "Claim {claim_key}: {claim_string} doesn't match regex set"
                                     ))));
                                 }
                             }
                             VerifierKind::StringOrArrayContains(contains) => {
                                 if claim_string != contains {
                                     return Err(Error::MalformedToken(ErrorDetails::new(format!(
-                                        "Claim {}: {} != {}",
-                                        claim_key, claim_string, contains
+                                        "Claim {claim_key}: {claim_string} != {contains}"
                                     ))));
                                 }
                             }
                             _ => {
                                 return Err(Error::MalformedToken(ErrorDetails::new(format!(
-                                    "Claim {}: has unexpected type (String)",
-                                    claim_key
+                                    "Claim {claim_key}: has unexpected type (String)"
                                 ))));
                             }
                         }
@@ -332,8 +322,7 @@ impl Verifier {
                                         _ => {
                                             return Err(Error::MalformedToken(ErrorDetails::new(
                                                 format!(
-                                                    "Claim {}: array elements are not all strings",
-                                                    claim_key
+                                                    "Claim {claim_key}: array elements are not all strings"
                                                 ),
                                             )));
                                         }
@@ -341,36 +330,31 @@ impl Verifier {
                                 }
                                 if !found {
                                     return Err(Error::MalformedToken(ErrorDetails::new(format!(
-                                        "Claim {}: array did not contain '{}'",
-                                        claim_key, contains
+                                        "Claim {claim_key}: array did not contain '{contains}'"
                                     ))));
                                 }
                             }
                             _ => {
                                 return Err(Error::MalformedToken(ErrorDetails::new(format!(
-                                    "Claim {}: has unexpected type (Array)",
-                                    claim_key
+                                    "Claim {claim_key}: has unexpected type (Array)"
                                 ))));
                             }
                         }
                     } else if let Value::Number(_claim_number) = claim_value {
                         // TODO: support verifying numeric claims
                         return Err(Error::MalformedToken(ErrorDetails::new(format!(
-                            "Claim {}: has unexpected type (Number)",
-                            claim_key
+                            "Claim {claim_key}: has unexpected type (Number)"
                         ))));
                     } else {
                         return Err(Error::MalformedToken(ErrorDetails::new(format!(
-                            "Claim {}: has unexpected type",
-                            claim_key
+                            "Claim {claim_key}: has unexpected type"
                         ))));
                     }
                 }
                 _ => {
                     // If we have a verifier for particular claim then that claim is required
                     return Err(Error::MalformedToken(ErrorDetails::new(format!(
-                        "Claim {}: missing",
-                        claim_key
+                        "Claim {claim_key}: missing"
                     ))));
                 }
             }
