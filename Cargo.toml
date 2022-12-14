@@ -21,7 +21,7 @@ serde = { version="1", features=["derive"] }
 serde_json = "1"
 regex = { version = "1", optional = true }
 pem = "1.1"
-simple_asn1 = "~0.6.2" # Note: there was an API break at 0.5, fixed in 0.5.1
+simple_asn1 = "0.6"
 ring = { version = "0.16", features = ["std"] }
 
 [dev-dependencies]
