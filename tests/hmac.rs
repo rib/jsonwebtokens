@@ -55,7 +55,7 @@ fn hmac_256_bad_secret() {
 
     let alg = Algorithm::new_hmac(AlgorithmID::HS256, "wrong-secret").unwrap();
     let validator = Verifier::create().build().unwrap();
-    let _claims: Value = validator.verify(&token_str, &alg).unwrap();
+    let _claims: Value = validator.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -68,7 +68,7 @@ fn missing_alg() {
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
 
     let validator = Verifier::create().build().unwrap();
-    let _claims: Value = validator.verify(&token_str, &alg).unwrap();
+    let _claims: Value = validator.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -173,7 +173,7 @@ fn decode_token() {
 
     let verifier = Verifier::create().build().unwrap();
     let claims: Value = verifier.verify(token, &alg).unwrap();
-    println!("{:?}", claims);
+    println!("{claims:?}");
 }
 
 #[test]

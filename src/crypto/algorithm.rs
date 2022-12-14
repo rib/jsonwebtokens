@@ -88,7 +88,7 @@ impl std::fmt::Display for AlgorithmID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let alg = *self;
         let s: &'static str = alg.into();
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
@@ -114,8 +114,7 @@ impl FromStr for AlgorithmID {
             "PS512" => Ok(AlgorithmID::PS512),
 
             _ => Err(Error::InvalidInput(ErrorDetails::new(format!(
-                "Unknown algorithm name {}",
-                s
+                "Unknown algorithm name {s}"
             )))),
         }
     }
@@ -288,7 +287,7 @@ impl Algorithm {
         Ok(Algorithm {
             id,
             kid: None,
-            secret_or_key: SecretOrKey::EcdsaKeyPair(signing_key),
+            secret_or_key: SecretOrKey::EcdsaKeyPair(Box::from(signing_key)),
         })
     }
 
@@ -326,7 +325,7 @@ impl Algorithm {
         Ok(Algorithm {
             id,
             kid: None,
-            secret_or_key: SecretOrKey::RsaKeyPair(key_pair),
+            secret_or_key: SecretOrKey::RsaKeyPair(Box::from(key_pair)),
         })
     }
 
@@ -379,7 +378,7 @@ impl Algorithm {
         // We need an Option(&str) instead of Option(String)
         let kid_matches = match &self.kid {
             Some(string) => kid == Some(string.as_ref()),
-            None => kid == None,
+            None => true,
         };
         if !kid_matches {
             return Err(Error::MalformedToken(ErrorDetails::new(format!(

@@ -46,7 +46,7 @@ fn missing_alg() {
 
     let alg = Algorithm::new_hmac(AlgorithmID::HS256, "secret").unwrap();
     let validator = Verifier::create().build().unwrap();
-    let _claims: Value = validator.verify(&token_str, &alg).unwrap();
+    let _claims: Value = validator.verify(token_str, &alg).unwrap();
 }
 
 #[test]
@@ -59,7 +59,7 @@ fn wrong_alg() {
     let token_str = jwt::encode(&header, &claims, &alg).unwrap();
 
     let validator = Verifier::create().build().unwrap();
-    let _claims: Value = validator.verify(&token_str, &alg).unwrap();
+    let _claims: Value = validator.verify(token_str, &alg).unwrap();
 }
 
 #[test]
