@@ -6,12 +6,18 @@ use crate::crypto::algorithm::{Algorithm, AlgorithmID};
 use crate::error::{Error, ErrorDetails};
 use crate::TokenData;
 
+const URL_SAFE_ENGINE: base64::engine::fast_portable::FastPortable =
+    base64::engine::fast_portable::FastPortable::from(
+        &base64::alphabet::URL_SAFE,
+        base64::engine::fast_portable::NO_PAD,
+    );
+
 pub(crate) fn b64_encode(input: &[u8]) -> String {
-    base64::encode_config(input, base64::URL_SAFE_NO_PAD)
+    base64::encode_engine(input, &URL_SAFE_ENGINE)
 }
 
 pub(crate) fn b64_decode(input: &str) -> Result<Vec<u8>, Error> {
-    base64::decode_config(input, base64::URL_SAFE_NO_PAD)
+    base64::decode_engine(input, &URL_SAFE_ENGINE)
         .map_err(|e| Error::InvalidInput(ErrorDetails::map("base64 decode failure", Box::new(e))))
 }
 
