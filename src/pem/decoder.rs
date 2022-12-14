@@ -92,36 +92,38 @@ impl PemEncodedKey {
                     }),
 
                     // This handles PKCS#8 public & private keys
-                    tag @ "PRIVATE KEY" | tag @ "PUBLIC KEY" => match classify_pem(&asn1_content) {
-                        Some(c) => {
-                            let is_private = tag == "PRIVATE KEY";
-                            let pem_type = match c {
-                                Classification::Ec => {
-                                    if is_private {
-                                        PemType::EcPrivate
-                                    } else {
-                                        PemType::EcPublic
+                    tag @ "PRIVATE KEY" | tag @ "PUBLIC KEY" | tag @ "CERTIFICATE" => {
+                        match classify_pem(&asn1_content) {
+                            Some(c) => {
+                                let is_private = tag == "PRIVATE KEY";
+                                let pem_type = match c {
+                                    Classification::Ec => {
+                                        if is_private {
+                                            PemType::EcPrivate
+                                        } else {
+                                            PemType::EcPublic
+                                        }
                                     }
-                                }
-                                Classification::Rsa => {
-                                    if is_private {
-                                        PemType::RsaPrivate
-                                    } else {
-                                        PemType::RsaPublic
+                                    Classification::Rsa => {
+                                        if is_private {
+                                            PemType::RsaPrivate
+                                        } else {
+                                            PemType::RsaPublic
+                                        }
                                     }
-                                }
-                            };
-                            Ok(PemEncodedKey {
-                                content: pem_contents,
-                                asn1: asn1_content,
-                                pem_type,
-                                standard: Standard::Pkcs8,
-                            })
+                                };
+                                Ok(PemEncodedKey {
+                                    content: pem_contents,
+                                    asn1: asn1_content,
+                                    pem_type,
+                                    standard: Standard::Pkcs8,
+                                })
+                            }
+                            None => Err(Error::InvalidInput(ErrorDetails::new(
+                                "Failed to recognize any OID in PKCS#8 PEM file",
+                            ))),
                         }
-                        None => Err(Error::InvalidInput(ErrorDetails::new(
-                            "Failed to recognize any OID in PKCS#8 PEM file",
-                        ))),
-                    },
+                    }
 
                     _ => Err(Error::InvalidInput(ErrorDetails::new(
                         "Failed to recognize PKCS#1 or SEC1 or PKCS#8 markers in PEM file",

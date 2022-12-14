@@ -40,6 +40,19 @@ fn round_trip_sign_verification_pem_pkcs1() {
 }
 
 #[test]
+fn round_trip_sign_verification_certificate_pem() {
+    let privkey_pem = include_bytes!("private_rsa_key_pkcs1.pem");
+    let certificate = include_bytes!("certificate_rsa_pkcs1.crt");
+
+    for &id in RSA_ALGORITHMS {
+        let alg = Algorithm::new_rsa_pem_signer(id, privkey_pem).unwrap();
+        let signature = alg.sign("hello world").unwrap();
+        let alg = Algorithm::new_rsa_pem_verifier(id, certificate).unwrap();
+        alg.verify(None, "hello world", signature).unwrap();
+    }
+}
+
+#[test]
 fn round_trip_sign_verification_pem_pkcs8() {
     let privkey_pem = include_bytes!("private_rsa_key_pkcs8.pem");
     let pubkey_pem = include_bytes!("public_rsa_key_pkcs8.pem");
