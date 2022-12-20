@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [1.2.0] 2022-12-20
+
 ### Added
 
 - Allow PEM certificates to be read as public keys ([#19](https://github.com/rib/jsonwebtokens/pull/19))
