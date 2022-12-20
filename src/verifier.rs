@@ -57,31 +57,15 @@ struct VerifierClosure {
 impl Eq for VerifierClosure {}
 impl PartialEq for VerifierClosure {
     fn eq(&self, other: &Self) -> bool {
-        // WARNING:
+        // The libs team has resolved to update Arc::ptr_eq so that it doesn't compare
+        // meta data for the wrapped value (such as a dyn trait vtable):
+        // https://github.com/rust-lang/rust/issues/103763
         //
-        // `Arc::ptr_eq(&self.func, &other.func)` is effectively implemented as:
-        //
-        // `Arc::as_ptr(&arc_a) == Arc::as_ptr(&arc_b)`
-        //
-        // which will notably result in comparing the vtable pointer for (wide) trait object pointers
-        // and does _not_ match the API documentation that states:
-        //
-        // > Returns true if the two Arcs point to the same allocation (in a vein similar to ptr::eq).
-        //
-        // (which is what we need here)
-        //
-        // See: https://github.com/rust-lang/rust/pull/80505
-        //
-        // To ensure we are comparing the data pointer component of any wide pointer then we
-        // additionally cast `Arc::as_ptr(&arc)` to a thin pointer to discard the vtable
-        //
-        // This avoid getting a `clippy::vtable_address_comparisons` error
-        //
-        // Ref: https://github.com/rust-lang/rust-clippy/issues/6524
-
-        let a = Arc::as_ptr(&self.func) as *const u8;
-        let b = Arc::as_ptr(&other.func) as *const u8;
-        std::ptr::eq(a, b)
+        // In the meantime we can silence this clippy suggestion since the vtable is
+        // benign in this case anyway:
+        // https://github.com/rust-lang/rust-clippy/issues/6524
+        #[allow(clippy::vtable_address_comparisons)]
+        Arc::ptr_eq(&self.func, &other.func)
     }
 }
 impl std::fmt::Debug for VerifierClosure {
