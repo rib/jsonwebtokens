@@ -9,7 +9,7 @@ repository = "https://github.com/rib/jsonwebtokens"
 documentation = "https://docs.rs/jsonwebtokens"
 readme = "README.md"
 keywords = ["jwt", "json", "web", "token", "api"]
-edition = "2018"
+edition = "2021"
 
 [features]
 default = [ "matching" ]
