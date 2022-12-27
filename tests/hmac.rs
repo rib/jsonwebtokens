@@ -10,11 +10,7 @@ use jwt::{raw, Algorithm, AlgorithmID, TokenData, Verifier};
 mod common;
 use common::get_time;
 
-const URL_SAFE_ENGINE: base64::engine::fast_portable::FastPortable =
-    base64::engine::fast_portable::FastPortable::from(
-        &base64::alphabet::URL_SAFE,
-        base64::engine::fast_portable::NO_PAD,
-    );
+use base64::{engine::URL_SAFE_NO_PAD, Engine};
 
 #[test]
 fn sign_hs256() {
@@ -203,7 +199,7 @@ fn decode_token_invalid_signature() {
 
 #[test]
 fn decode_token_with_bytes_secret() {
-    let secret_b64 = base64::encode_engine(b"\x01\x02\x03", &URL_SAFE_ENGINE);
+    let secret_b64 = URL_SAFE_NO_PAD.encode(b"\x01\x02\x03");
     let alg = Algorithm::new_hmac_b64(AlgorithmID::HS256, secret_b64).unwrap();
     let token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiQGIuY29tIiwiY29tcGFueSI6IkFDTUUiLCJleHAiOjI1MzI1MjQ4OTF9.Hm0yvKH25TavFPz7J_coST9lZFYH1hQo0tvhvImmaks";
     let verifier = Verifier::create().build().unwrap();
