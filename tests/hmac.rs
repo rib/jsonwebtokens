@@ -10,7 +10,7 @@ use jwt::{raw, Algorithm, AlgorithmID, TokenData, Verifier};
 mod common;
 use common::get_time;
 
-use base64::{engine::URL_SAFE_NO_PAD, Engine};
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 
 #[test]
 fn sign_hs256() {

@@ -6,7 +6,7 @@ use crate::crypto::algorithm::{Algorithm, AlgorithmID};
 use crate::error::{Error, ErrorDetails};
 use crate::TokenData;
 
-use base64::{engine::URL_SAFE_NO_PAD, Engine};
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 
 pub(crate) fn b64_encode(input: &[u8]) -> String {
     URL_SAFE_NO_PAD.encode(input)
