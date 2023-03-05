@@ -201,3 +201,40 @@ fn roundtrip_with_jwtio_example_jey() {
         assert_eq!(my_claims, claims);
     }
 }
+
+#[test]
+fn decode_test_issue_3() {
+    // https://github.com/rib/jsonwebtokens-cognito/issues/3
+    let token = "eyJraWQiOiJRVGp3dnFlYktUM0swbVdhK3B6aGxYQWRpS3VTMW94XC9hRTh2RkVEd1EyVT0iLCJhbGciOiJSUzI1NiJ9.eyJhdF9oYXNoIjoiZW1JOUh0SDVDbUNMQ0lLTHhPZXpRUSIsInN1YiI6Ijg1Mjc1YjI1LTFmOGUtNDAyZi04MzNjLTg3YmNkODlkNjljZSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtZWFzdC0yLmFtYXpvbmF3cy5jb21cL3VzLWVhc3QtMl9WMlZ0WFlPVzAiLCJjb2duaXRvOnVzZXJuYW1lIjoic2hyYXZhbiIsIm9yaWdpbl9qdGkiOiIwMjQwMDU0YS0wYjBkLTQ1ZWUtODg5NS02ZmJjMGM5ZTM3MGEiLCJhdWQiOiI3ZGNudTZocmJmYmFzbjAycmpiMHRvb3A5dCIsImV2ZW50X2lkIjoiYzhhYzY0M2MtZmM2Ny00YmYyLTg2NmItNzBkNTYyZmQ4OWFlIiwidG9rZW5fdXNlIjoiaWQiLCJhdXRoX3RpbWUiOjE2NzgwMjA2NDcsImV4cCI6MTY3ODAyNDI0NywiaWF0IjoxNjc4MDIwNjQ3LCJqdGkiOiI5ZWU5OTc2OS00YWZhLTQ0MjAtOTcwZC0zZmU4NWRmM2ExYmYiLCJlbWFpbCI6InNocmF2YW5zaGV0dHkzMjJAZ21haWwuY29tIn0.aFySCAAjFsv6MBH7uPfTM4RC2yNghFgjyBvumRhz4TRJkXzVPpzOaV2IXK1CWhQLluSEeQhZADaun8nc7wuFF-xezO2GHFqeU1bVUQO8YUXtAHP3CXH7eC4UKS1QAyXBNQWKGuwLUCnfkWBaqnJrk6lmmqhprXZy6TkdRSeDuf3XzHTndZPLNRMmYuwG1mp7BY1Y7bPpalC-cMA-la4O__mL3TeeSeIXwouxYMTc8fxRHUrAKzXyKitLjdIFl3qG0oJ7La_e2YulaAb5l4RcLS1W1tmUNYUoXP8DNOZA7tP5n6glSj1WF2xhxjyNuE5vtyrP9JJV-zMI97K_F1QUyw";
+
+    // public key from https://cognito-idp.us-east-2.amazonaws.com/us-east-2_V2VtXYOW0/.well-known/jwks.json
+    /*
+    {
+        "alg":"RS256",
+        "e":"AQAB",
+        "kid":"QTjwvqebKT3K0mWa+pzhlXAdiKuS1ox/aE8vFEDwQ2U="
+        "kty":"RSA",
+        "n":"oGLoW1un7726NaGmKomyQydPjSMClNSLC9Nh0V0ch8O76sBiDm5vMPy6i8NPXV7T9dENtvBC3dv7SWX9PxVuxfCoer8x9645ufYQqtML520kmTqIbW6CB6m5F56tC_xu9VVovRYdqzDINxrplMsexm4m0FUxKypHcVpZpDCeB8GK1ssnVLrQ7LRbhwxne0keeXcM0OtqNMSS0PwvVGlOzzrJLID8p_IUYNkDThSKFZRjBNd606OmplEIYNgklS2wVMoBnR0yT95N9TQ3672NTz2wYl9g1x1kgKfQVNZsybprh6g9ZuuYvWtkP7HFq8veNUQ-0IuUSVS-sYj4mWf9bQ",
+        "use":"sig"
+    },
+    {
+        "alg":"RS256",
+        "e":"AQAB",
+        "kid":"PfPSfsL2IiAcScj/gUx4waEjMiqPGSHI27SdH94NHJE=",
+        "kty":"RSA",
+        "n":"mA_5EPWdcDANel6fAjz-9nHDOVC0WDD88xsJ_-nZpA6O_goce8Np1CvBIV8aZxropffUcg2ySUZ6cpcdm1lw0t7dAhyZyEO0POo3uyy4mrLx4H_50lRWOmg8ZPC6JhEDC-p1R-8kIYXqpmTzAMkGxtjxCbbs0gg4huvmfWNrYDkaNHiDRjJ38kr_zG-Pb6hNl4ynRN1-GXtkdLlGLmoW3oHy95QKwBTUVdmBjZZIXlS7rOOJ8RHI4xVKrgwsopNifA75g7izvTyEEJsQ1ofv0ROJCWPyXZHExDwRB3GxhiyR6noULygNZu-_zWPAyRbSEw1GWSZIuhBaxiXF9InSVw",
+        "use":"sig"
+    }
+    */
+    let n = "oGLoW1un7726NaGmKomyQydPjSMClNSLC9Nh0V0ch8O76sBiDm5vMPy6i8NPXV7T9dENtvBC3dv7SWX9PxVuxfCoer8x9645ufYQqtML520kmTqIbW6CB6m5F56tC_xu9VVovRYdqzDINxrplMsexm4m0FUxKypHcVpZpDCeB8GK1ssnVLrQ7LRbhwxne0keeXcM0OtqNMSS0PwvVGlOzzrJLID8p_IUYNkDThSKFZRjBNd606OmplEIYNgklS2wVMoBnR0yT95N9TQ3672NTz2wYl9g1x1kgKfQVNZsybprh6g9ZuuYvWtkP7HFq8veNUQ-0IuUSVS-sYj4mWf9bQ";
+    let e = "AQAB";
+
+    let alg = Algorithm::new_rsa_n_e_b64_verifier(AlgorithmID::RS256, n, e).unwrap();
+    let verifier = Verifier::create().build().unwrap();
+
+    let jwt::raw::TokenSlices {message, signature, header, claims } = jwt::raw::split_token(token).unwrap();
+    let header = jwt::raw::decode_json_token_slice(header).unwrap();
+    jwt::raw::verify_signature_only(&header, message, signature, &alg).unwrap();
+    let claims = jwt::raw::decode_json_token_slice(claims).unwrap();
+    verifier.verify_claims_only(&claims, 1678020647).unwrap();
+}
